@@ -14,6 +14,7 @@ from KafkaModelEngine import KafkaModelEngine
 from singleFederatedIncrementalTraining import SingleFederatedIncrementalTraining
 from distributedFederatedTraining import DistributedFederatedTraining
 from distributedFederatedIncrementalTraining import DistributedFederatedIncrementalTraining
+from trigger_federated_training_job import trigger_federated_training_job
 
 def aggregate_model(model, trained_model, aggregation_strategy, control_msg, model_metrics):
   """Aggregates the model with the trained model"""
@@ -56,7 +57,7 @@ def EdgeBasedTraining(training):
     training.generate_federated_kafka_topics()
     """Generates the federated Kafka topics to receive the data from the federated nodes"""
   
-    logging.info("Started Kafka consumer in [%s] topic", training.model_control_topic)
+    logging.info("Started Kafka consumer in [%s] topic", training.aggregation_control_topic)
     consumer = Consumer({'bootstrap.servers': training.bootstrap_servers, 'group.id': 'group_id_'+training.federated_string_id ,'auto.offset.reset': 'earliest','enable.auto.commit': False})
     consumer.subscribe([training.aggregation_control_topic])
     """Starts a Kafka consumer to receive control information"""
@@ -79,6 +80,10 @@ def EdgeBasedTraining(training):
     version, rounds, model_metrics, start_time = 0, 0, [], time.time()
     """Initializes the version, rounds, model metrics and start time"""
 
+    # Trigger federated training job
+    trigger_federated_training_job(training)
+    logging.info("Federated training job triggered")
+
     sink = FederatedKafkaMLModelSink(bootstrap_servers=training.bootstrap_servers, topic=training.model_data_topic, control_topic=training.model_control_topic, federated_id=training.result_id, training_settings=training_settings)
     
     while rounds < training.agg_rounds:
@@ -97,8 +102,24 @@ def EdgeBasedTraining(training):
             continue
 
         try:
-          control_msg = json.loads(message.value().decode('utf-8'))
-          logging.info("Message received for prediction")
+          logging.info(f"Raw message value type: {type(message.value())}")
+          logging.info(f"Raw message value bytes (first 100): {message.value()[:100]}")
+          
+          # First try to decode as UTF-8
+          try:
+              decoded_value = message.value().decode('utf-8')
+              control_msg = json.loads(decoded_value)
+          except UnicodeDecodeError as decode_error:
+              logging.error(f"Failed to decode message as UTF-8: {str(decode_error)}")
+              logging.error(f"Message bytes (hex): {message.value().hex()}")
+              raise Exception("Control message contains invalid UTF-8 data. This should be a JSON message.")
+          except json.JSONDecodeError as json_error:
+              logging.error(f"Failed to parse message as JSON: {str(json_error)}")
+              logging.error(f"Decoded message: {decoded_value}")
+              raise Exception("Control message is not valid JSON")
+          
+          logging.info("Message successfully parsed as JSON")
+          logging.info(f"Control message: {control_msg}")
 
           model_reader = KafkaModelEngine(training.bootstrap_servers, 'server')
           trained_model = model_reader.setWeights(training.model, control_msg)

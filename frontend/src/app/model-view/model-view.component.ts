@@ -34,6 +34,17 @@ export class ModelViewComponent implements OnInit {
               private _location: Location) { }
 
   ngOnInit(): void {
+    // Set default values for new model
+    if (!this.route.snapshot.paramMap.has('id')) {
+      // Set default imports based on framework
+      this.model.imports = `import tensorflow as tf
+import numpy as np`;
+      
+      // Set default code using the placeholder
+      this.framework = "tf"; 
+      this.model.code = this.getPlaceholder();
+    }
+
     // Get the ID in case of a edit request
     if (this.route.snapshot.paramMap.has('id')){
         this.modelId = Number(this.route.snapshot.paramMap.get('id'));
@@ -83,13 +94,13 @@ export class ModelViewComponent implements OnInit {
     var txt = ""
     if (this.framework == "tf"){
       txt =`model = tf.keras.models.Sequential([
-        tf.keras.layers.Flatten(input_shape=(28, 28)), 
-        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dense(128, activation='relu', input_shape=(784,)), 
+        tf.keras.layers.Dense(64, activation='relu'),
         tf.keras.layers.Dense(10, activation='softmax')
       ])
 model.compile(optimizer=tf.keras.optimizers.Adam(0.001),
-      loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), 
-      metrics=[tf.keras.metrics.SparseCategoricalAccuracy()])
+      loss=tf.keras.losses.CategoricalCrossentropy(), 
+      metrics=[tf.keras.metrics.CategoricalAccuracy()])
     `;
     }else if(this.framework == "pth"){
       txt = `class NeuralNetwork(nn.Module):

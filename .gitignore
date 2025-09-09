@@ -3,7 +3,6 @@
 /dist/
 /bazel-out
 /integration/bazel/bazel-*
-*.log
 node_modules
 
 # Include when developing application packages.
@@ -135,6 +134,7 @@ target/
 *.pyc
 __pycache__/
 local_settings.py
+federated_test_env/
 
 .env
 db.sqlite3

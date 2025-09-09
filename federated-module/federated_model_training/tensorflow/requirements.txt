@@ -1,7 +1,9 @@
-tensorflow-io==0.23.1
-kafka-python==2.0.2
-scikit-learn==1.0.2
-seaborn==0.11.2
-confluent-kafka==1.8.2
-web3==5.28.0
-protobuf==3.20.3
+kafka-python
+numpy<1.24
+scikit-learn
+seaborn
+confluent-kafka
+web3
+protobuf
+tensorflow==2.12.0
+tensorflow-io==0.32.0

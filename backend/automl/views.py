@@ -210,7 +210,9 @@ class ModelID(generics.RetrieveUpdateDestroyAPIView):
                             
                         if data['framework'] == "pth":
                             resp = requests.post(settings.PYTORCH_EXECUTOR_URL+"exec_pth/",data=json.dumps(data_to_send))
-                        else:   
+                        else: 
+                            logging.info("model code before sending to tfexecutor: %s", data_to_send)
+                            logging.info("request url: %s", settings.TENSORFLOW_EXECUTOR_URL+"exec_tf/")
                             resp = requests.post(settings.TENSORFLOW_EXECUTOR_URL+"exec_tf/",data=json.dumps(data_to_send))
 
                         """Prints the information of the model"""
@@ -533,7 +535,7 @@ class DeploymentList(generics.ListCreateAPIView):
                                             'name': 'model-training-'+str(result.id)
                                         },
                                         'spec': {
-                                            'ttlSecondsAfterFinished' : 10,
+                                            'ttlSecondsAfterFinished' : 30,
                                             'template' : {
                                                 'spec': {
                                                     'containers': [{
@@ -574,7 +576,7 @@ class DeploymentList(generics.ListCreateAPIView):
                                             'name': 'federated-model-training-controller-'+str(result.id)
                                         },
                                         'spec': {
-                                            'ttlSecondsAfterFinished' : 10,
+                                            'ttlSecondsAfterFinished' : 30,
                                             'template' : {
                                                 'spec': {
                                                     'containers': [{
@@ -633,7 +635,7 @@ class DeploymentList(generics.ListCreateAPIView):
                                             'name': 'incremental-model-training-'+str(result.id)
                                         },
                                         'spec': {
-                                            'ttlSecondsAfterFinished' : 10,
+                                            'ttlSecondsAfterFinished' : 30,
                                             'template' : {
                                                 'spec': {
                                                     'containers': [{
@@ -679,7 +681,7 @@ class DeploymentList(generics.ListCreateAPIView):
                                             'name': 'federated-incremental-model-training-controller-'+str(result.id)
                                         },
                                         'spec': {
-                                            'ttlSecondsAfterFinished' : 10,
+                                            'ttlSecondsAfterFinished' : 30,
                                             'template' : {
                                                 'spec': {
                                                     'containers': [{
@@ -751,7 +753,7 @@ class DeploymentList(generics.ListCreateAPIView):
                                             'name': 'distributed-model-training'+n
                                         },
                                         'spec': {
-                                            'ttlSecondsAfterFinished' : 10,
+                                            'ttlSecondsAfterFinished' : 30,
                                             'template' : {
                                                 'spec': {
                                                     'containers': [{
@@ -797,7 +799,7 @@ class DeploymentList(generics.ListCreateAPIView):
                                             'name': 'federated-distributed-model-training-controller'+n
                                         },
                                         'spec': {
-                                            'ttlSecondsAfterFinished' : 10,
+                                            'ttlSecondsAfterFinished' : 30,
                                             'template' : {
                                                 'spec': {
                                                     'containers': [{
@@ -848,7 +850,7 @@ class DeploymentList(generics.ListCreateAPIView):
                                             'name': 'distributed-incremental-model-training'+n
                                         },
                                         'spec': {
-                                            'ttlSecondsAfterFinished' : 10,
+                                            'ttlSecondsAfterFinished' : 30,
                                             'template' : {
                                                 'spec': {
                                                     'containers': [{
@@ -897,7 +899,7 @@ class DeploymentList(generics.ListCreateAPIView):
                                             'name': 'fed-dist-incremental-model-training-controller'+n
                                         },
                                         'spec': {
-                                            'ttlSecondsAfterFinished' : 10,
+                                            'ttlSecondsAfterFinished' : 30,
                                             'template' : {
                                                 'spec': {
                                                     'containers': [{

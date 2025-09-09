@@ -10,6 +10,8 @@ import traceback
 from config import *
 from utils import *
 from FederatedKafkaMLAggregationSink import FederatedKafkaMLAggregationSink
+from federated_singleIncrementalTraining import SingleIncrementalTraining
+from federated_distributedIncrementalTraining import DistributedIncrementalTraining
 
 RETRIES = 10
 '''Number of retries for requests'''
@@ -19,18 +21,42 @@ SLEEP_BETWEEN_REQUESTS = 5
 
 def classicFederatedTraining(training):
   try:
+    logging.info("=== STARTING CLASSIC FEDERATED TRAINING ===")
+    logging.info("Training object properties:")
+    logging.info("  - model_control_topic: %s", training.model_control_topic)
+    logging.info("  - kml_cloud_bootstrap_server: %s", training.kml_cloud_bootstrap_server)
+    logging.info("  - group_id: %s", training.group_id)
+    logging.info("  - aggregation_data_topic: %s", training.aggregation_data_topic)
+    logging.info("  - aggregation_control_topic: %s", training.aggregation_control_topic)
+    
+    logging.info("Creating KafkaConsumer...")
     consumer_control = KafkaConsumer(training.model_control_topic, bootstrap_servers=training.kml_cloud_bootstrap_server,
                                     enable_auto_commit=False, group_id=training.group_id, auto_offset_reset='earliest')
     
+    logging.info("✅ KafkaConsumer created successfully")
+    logging.info("Consumer details:")
+    logging.info("  - Consumer object: %s", type(consumer_control))
+    logging.info("  - Consumer group_id: %s", consumer_control.config['group_id'])
+    logging.info("  - Consumer bootstrap_servers: %s", consumer_control.config['bootstrap_servers'])
     
     """Starts a Kafka consumer to receive control information"""
     logging.info("Started Kafka consumer in [%s] topic", training.model_control_topic)
     
+    logging.info("Creating FederatedKafkaMLAggregationSink...")
     sink = FederatedKafkaMLAggregationSink(bootstrap_servers=training.kml_cloud_bootstrap_server, topic=training.aggregation_data_topic,
                                             control_topic=training.aggregation_control_topic, federated_id=training.group_id)
+    logging.info("✅ FederatedKafkaMLAggregationSink created successfully")
 
     """Read model from Kafka"""
+    logging.info("=== ABOUT TO START CONSUMER LOOP ===")
+    logging.info("Consumer state before loop:")
+    logging.info("  - Consumer connected: %s", consumer_control._coordinator.connected())
+    logging.info("  - Consumer partitions: %s", consumer_control.assignment())
+    logging.info("  - Consumer subscription: %s", consumer_control.subscription())
+    
+    logging.info("Starting for msg in consumer_control loop...")
     for msg in consumer_control:
+      logging.info("✅ MESSAGE RECEIVED! Loop is working!")
       logging.info("Received message from control topic")
 
       try:
@@ -97,10 +123,18 @@ def classicFederatedTraining(training):
         traceback.print_exc()
         logging.error("Error with the received data [%s]. Waiting for new a new prediction.", str(e))
 
+    logging.info("=== CONSUMER LOOP COMPLETED ===")
+    logging.info("Closing consumer...")
     consumer_control.close()
+    logging.info("✅ Consumer closed successfully")
+    logging.info("=== CLASSIC FEDERATED TRAINING COMPLETED ===")
     sink.close()
     logging.info("Model trained and sent the final weights to the aggregation topic")
 
   except Exception as e:
+      logging.error("=== EXCEPTION IN CLASSIC FEDERATED TRAINING ===")
+      logging.error("Exception type: %s", type(e).__name__)
+      logging.error("Exception message: %s", str(e))
       traceback.print_exc()
+      logging.error("Full traceback printed above")
       logging.error("Error in main [%s]. Service will be restarted.", str(e))

@@ -6,6 +6,18 @@ import logging
 import json
 import pickle
 import tensorflow as tf
+import numpy as np
+
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NumpyEncoder, self).default(obj)
+
 
 class FederatedKafkaMLModelSink(object):
     """Class representing a sink of federated learning data to Apache Kafka. This class will allow to receive 
@@ -93,7 +105,7 @@ class FederatedKafkaMLModelSink(object):
                 tp = TopicPartition(self.topic, p)
                 self.__consumer.assign([tp])
                 self.__consumer.seek_to_end(tp)
-                last_offset = self.__consumer.position(tp)
+                last_offset = self.__consumer.position(tp,100) or 0
                 dic[tp.partition] = {'offset': last_offset}
         return dic
     
@@ -106,6 +118,7 @@ class FederatedKafkaMLModelSink(object):
         """Updates the offsets and length in the topic defined after sending data"""
         
         dic = self.__get_partitions_and_offsets()
+        logging.info(f"Partitions and offsets received: {dic} for topic {self.topic} and consumer {self.__consumer}")
         self.total_messages = 0
         for p in dic.keys():
             if p in self.__partitions.keys():
@@ -166,21 +179,25 @@ class FederatedKafkaMLModelSink(object):
 
         return res
 
-    def __send_control_msg(self, model, version):
+    def __send_control_msg(self, model, version, record_metadata):
         """Sends control message to Apache Kafka with the information"""
 
+        offset = record_metadata[0].offset
+        length = len(record_metadata) + offset
+        topic_str = f'{self.topic}:{record_metadata[0].partition}:{offset}:{length}'
         dic = {
-            'topic': self.__stringify_partitions(),
+            'topic': topic_str,
             'version': version,
             'training_settings': self.training_settings,
             'model_architecture': model.to_json(),
             'model_compile_args': self.__parse_model_compile_args(model)
         }
         key = self.__object_to_bytes(self.federated_id)
-        data = json.dumps(dic).encode('utf-8')
+        data = json.dumps(dic, cls=NumpyEncoder).encode('utf-8')
         self.__producer.send(self.control_topic, key=key, value=data)
         self.__producer.flush()
-        logging.info("Control message to Kafka. Topic %s - Version %s", str(dic['topic']), str(dic['version']))
+        logging.info(f"Control message  sent to {self.control_topic}")
+        logging.info("Control message not` to Kafka. Topic %s - Version %s", str(dic['topic']), str(dic['version']))
         return dic
     
     def __send(self, data, label=None):
@@ -189,22 +206,25 @@ class FederatedKafkaMLModelSink(object):
         data = self.__object_to_bytes(data)
         label = self.__object_to_bytes(label)
         if label is None:
-            self.__producer.send(self.topic, value=data)
+            return self.__producer.send(self.topic, value=data)
         else:
-            self.__producer.send(self.topic, key=label, value=data)
+            return self.__producer.send(self.topic, key=label, value=data)
 
     def send_model(self, model, version):
         """Sends layer weights"""
         self.__init_partitions()
+        record_metadata = []
         for idx, layer_w in enumerate(model.get_weights()):
             # if len(model.layers[i]) > 0:
             logging.info("Sending layer %d, shape %s", idx, str(layer_w.shape))
-            self.__send(data=layer_w, label=idx)        
+            feature = self.__send(data=layer_w, label=idx)
+            record_metadata.append(feature.get(timeout=10))       
             self.__producer.flush()
 
         # self.__producer.flush()
+        logging.info(f"Features sent: {record_metadata}")
         self.__update_partitions()
-        control_msg = self.__send_control_msg(model, version=version)
+        control_msg = self.__send_control_msg(model, version=version, record_metadata=record_metadata)
         return control_msg
         
     def close(self):

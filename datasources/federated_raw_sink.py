@@ -53,6 +53,7 @@ class FederatedRawSink(KafkaMLSink):
         """Sends data and label to Apache Kafka"""
     
         if not self._configured_format:
+            print("Configuring format")
             self.data_reshape = super().shape_to_string(data)
             self.label_reshape = super().shape_to_string(label)
             self.data_type = super().type_to_string(data)

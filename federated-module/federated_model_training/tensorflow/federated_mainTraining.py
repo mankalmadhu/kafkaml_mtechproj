@@ -79,9 +79,28 @@ class MainTraining(object):
         logging.info("Fetching labeled dataset from Kafka Topic [%s], with bootstrap server [%s]", self.input_data_topic, self.data_bootstrap_server)  
 
         decoder = DecoderFactory.get_decoder(self.input_format, self.input_config)
-        self.kafka_dataset = kafka_io.KafkaDataset(self.input_data_topic, servers=self.data_bootstrap_server, group=self.group_id, eof=True, message_key=True).map(lambda x, y: decoder.decode(x, y))
+        
+        # Use the newer tfio.IODataset.from_kafka API instead of deprecated KafkaDataset
+        self.kafka_dataset = tfio.IODataset.from_kafka(
+            self.input_data_topic, 
+            servers=self.data_bootstrap_server, 
+            group=self.group_id,
+            offset="latest", 
+        ).map(lambda message: decoder.decode(message[0], message[1]))
+        
         self.train_dataset = self.kafka_dataset.take(self.training_size).batch(training_settings['batch'])
         self.validation_dataset = self.kafka_dataset.skip(self.training_size).batch(training_settings['batch'])
+       # lets add some logs to check the shapes and lens of both  
+        # lets add some logs to check the shapes and lens of both  
+        # Get a sample batch to check shapes
+        sample_batch = next(iter(self.train_dataset))
+        logging.info("Training dataset shapes: features=%s, labels=%s", 
+                    sample_batch[0].shape, sample_batch[1].shape)
+        
+        sample_val_batch = next(iter(self.validation_dataset))
+        logging.info("Validation dataset shapes: features=%s, labels=%s", 
+                    sample_val_batch[0].shape, sample_val_batch[1].shape)
+        
 
         logging.info("Dataset fetched successfully")
     
@@ -347,5 +366,8 @@ class MainTraining(object):
                     epoch_validation_metrics[k[4:]].append(v)
                 except:
                     epoch_validation_metrics[k[4:]] = v
+        
+        logging.info("Epoch training metrics: %s", str(epoch_training_metrics))
+        logging.info("Epoch validation metrics: %s", str(epoch_validation_metrics))
         
         return epoch_training_metrics, epoch_validation_metrics

@@ -1,0 +1,53 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: federated-training-${FEDERATED_MODEL_ID}-worker-${FEDERATED_CLIENT_ID}
+  namespace: ${KUBE_NAMESPACE:-kafkaml}
+spec:
+  ttlSecondsAfterFinished: 100
+  template:
+    spec:
+      containers:
+      - image: ${TRAINING_IMAGE}
+        name: training
+        env:
+        - name: KML_CLOUD_BOOTSTRAP_SERVERS
+          value: ${KML_CLOUD_BOOTSTRAP_SERVERS}
+        - name: DATA_BOOTSTRAP_SERVERS
+          value: ${DATA_BOOTSTRAP_SERVERS}
+        - name: DATA_TOPIC
+          value: ${DATA_TOPIC}
+        - name: UNSUPERVISED_TOPIC
+          value: ${UNSUPERVISED_TOPIC:-""}
+        - name: INPUT_FORMAT
+          value: ${INPUT_FORMAT}
+        - name: INPUT_CONFIG
+          value: ${INPUT_CONFIG}
+        - name: VALIDATION_RATE
+          value: ${VALIDATION_RATE}
+        - name: TEST_RATE
+          value: ${TEST_RATE}
+        - name: TOTAL_MSG
+          value: ${TOTAL_MSG}
+        - name: FEDERATED_MODEL_ID
+          value: ${FEDERATED_MODEL_ID}
+        - name: FEDERATED_CLIENT_ID
+          value: ${FEDERATED_CLIENT_ID}
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: ${NVIDIA_VISIBLE_DEVICES:-all}
+        - name: CASE
+          value: ${CASE}
+        # Blockchain-specific environment variables (only for Case 5)
+        - name: ETH_RPC_URL
+          value: ${ETH_RPC_URL:-""}
+        - name: ETH_CONTRACT_ADDRESS
+          value: ${ETH_CONTRACT_ADDRESS:-""}
+        - name: ETH_CONTRACT_ABI
+          value: ${ETH_CONTRACT_ABI:-""}
+        - name: ETH_WALLET_ADDRESS
+          value: ${ETH_WALLET_ADDRESS:-""}
+        - name: ETH_WALLET_KEY
+          value: ${ETH_WALLET_KEY:-""}
+        imagePullPolicy: Always
+      restartPolicy: OnFailure
+  backoffLimit: 1

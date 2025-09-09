@@ -49,6 +49,29 @@ export class DeploymentViewComponent implements OnInit {
   
   ngOnInit(): void {
     this.deployment.conf_mat_settings = false;
+    
+    // Set default values for classic training settings
+    this.deployment.batch = 8;   // Default batch size
+    this.deployment.tf_kwargs_fit = "epochs=5";  // Default TF training arguments
+    this.deployment.gpumem = 0;   // Default GPU memory in GB
+    
+    // Set default values for mandatory federated learning fields
+    this.deployment.agg_rounds = 15;   // Default number of aggregation rounds
+    this.deployment.min_data = 100;   // Default minimum data entries per device
+    this.deployment.agg_strategy = 'FedAvg';  // Default aggregation strategy
+    this.deployment.data_restriction = JSON.stringify({
+      "features": {
+        "label": {
+          "num_classes": 10,
+          "names": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+        }
+      },
+      "supervised_keys": {
+        "input": "image",
+        "output": "label"
+      }
+    });  // Default MNIST data format restriction
+
     if (this.route.snapshot.paramMap.has('id')) {
       this.configurationID = Number(this.route.snapshot.paramMap.get('id'));
       this.configurationService.getConfiguration(this.configurationID).subscribe(

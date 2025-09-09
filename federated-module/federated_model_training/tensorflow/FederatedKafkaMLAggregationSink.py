@@ -35,6 +35,16 @@ class FederatedKafkaMLAggregationSink(object):
     def __init__(self, bootstrap_servers, topic, control_topic, 
                  federated_id, data_standard=None, training_settings=None, group_id='federated'):
 
+        logging.info("=== STARTING FederatedKafkaMLAggregationSink CONSTRUCTOR ===")
+        logging.info("Constructor parameters:")
+        logging.info("  - bootstrap_servers: %s", bootstrap_servers)
+        logging.info("  - topic: %s", topic)
+        logging.info("  - control_topic: %s", control_topic)
+        logging.info("  - federated_id: %s", federated_id)
+        logging.info("  - data_standard: %s", data_standard)
+        logging.info("  - training_settings: %s", training_settings)
+        logging.info("  - group_id: %s", group_id)
+
         self.bootstrap_servers = bootstrap_servers
         self.topic = topic
         self.control_topic = control_topic
@@ -44,22 +54,31 @@ class FederatedKafkaMLAggregationSink(object):
 
         self.group_id = group_id
 
+
         self.total_messages = 0
 
         self.__partitions = {}
 
+        logging.info("Creating KafkaConsumer for partitions...")
         self.__consumer = KafkaConsumer(
             bootstrap_servers=self.bootstrap_servers,
             group_id=self.group_id,
             enable_auto_commit=False            
         )
+        logging.info("✅ KafkaConsumer created successfully")
+
+        logging.info("Creating KafkaProducer...")
         self.__producer = KafkaProducer(
             bootstrap_servers=self.bootstrap_servers,
             max_request_size= 2**31-1
         )
+        logging.info("✅ KafkaProducer created successfully")
 
+        logging.info("About to call __init_partitions()...")
         self.__init_partitions()
+        logging.info("✅ __init_partitions() completed successfully")
         logging.info("Partitions received [%s]", str(self.__partitions))
+        logging.info("=== FederatedKafkaMLAggregationSink CONSTRUCTOR COMPLETED ===")
 
     def __object_to_bytes(self, value):
         """Converts a python type to bytes. Types allowed are string, int, bool and float."""
@@ -86,21 +105,50 @@ class FederatedKafkaMLAggregationSink(object):
     def __get_partitions_and_offsets(self):
         """Obtains the partitions and offsets in the topic defined"""
         
+        logging.info("=== STARTING __get_partitions_and_offsets ===")
+        logging.info("Topic: %s", self.topic)
+        logging.info("Consumer: %s", self.__consumer)
+        
         dic = {} 
+        logging.info("Calling partitions_for_topic(%s)...", self.topic)
         partitions = self.__consumer.partitions_for_topic(self.topic)
+        logging.info("Partitions received: %s", partitions)
+        
         if partitions is not None:
+            logging.info("Processing %d partitions...", len(partitions))
             for p in self.__consumer.partitions_for_topic(self.topic):
+                logging.info("Processing partition %d...", p)
                 tp = TopicPartition(self.topic, p)
+                logging.info("Created TopicPartition: %s", tp)
+                
+                logging.info("Assigning partition %s to consumer...", tp)
                 self.__consumer.assign([tp])
+                logging.info("✅ Partition assigned successfully")
+                
+                logging.info("Seeking to end of partition %s...", tp)
                 self.__consumer.seek_to_end(tp)
-                last_offset = self.__consumer.position(tp)
+                logging.info("✅ Seek to end completed")
+                
+                logging.info("Getting position for partition %s...", tp)
+                last_offset = self.__consumer.position(tp,100) or 0
+                logging.info("✅ Position obtained: %d", last_offset)
+                
                 dic[tp.partition] = {'offset': last_offset}
+                logging.info("✅ Partition %d processed, offset: %d", tp.partition, last_offset)
+        else:
+            logging.warning("No partitions found for topic %s", self.topic)
+        
+        logging.info("Final partitions dictionary: %s", dic)
+        logging.info("=== __get_partitions_and_offsets COMPLETED ===")
         return dic
     
     def __init_partitions(self):
         """Obtains the partitions and offsets in the topic defined and save them in self.__partitions"""
         
+        logging.info("=== STARTING __init_partitions ===")
         self.__partitions = self.__get_partitions_and_offsets()
+        logging.info("✅ __init_partitions completed successfully")
+        logging.info("=== __init_partitions COMPLETED ===")
 
     def __update_partitions(self):
         """Updates the offsets and length in the topic defined after sending data"""
@@ -149,11 +197,14 @@ class FederatedKafkaMLAggregationSink(object):
         self.__producer.flush()
         logging.info("Control message to Kafka %s", str(dic))
 
-    def __send_control_msg_metrics(self, metrics, version, num_data):
+    def __send_control_msg_metrics(self, metrics, version, num_data, record_metadata):
         """Sends control message to Apache Kafka with the information"""
 
+        offset = record_metadata[0].offset
+        length = len(record_metadata) + offset
+        topic_str = f'{self.topic}:{record_metadata[0].partition}:{offset}:{length}'
         dic = {
-            'topic': self.__stringify_partitions(),
+            'topic': topic_str,
             'version': version+1 if version != -1 else -1,
             'metrics': metrics,
             'num_data': num_data
@@ -172,9 +223,9 @@ class FederatedKafkaMLAggregationSink(object):
         data = self.__object_to_bytes(data)
         label = self.__object_to_bytes(label)
         if label is None:
-            self.__producer.send(self.topic, value=data)
+            return self.__producer.send(self.topic, value=data)
         else:
-            self.__producer.send(self.topic, key=label, value=data)
+            return self.__producer.send(self.topic, key=label, value=data)
 
     def send_model(self, model):
         """Sends layer weights"""
@@ -190,14 +241,16 @@ class FederatedKafkaMLAggregationSink(object):
 
     def send_model_and_metrics(self, model, metrics, version, num_data):
         self.__init_partitions()
+        record_metadata = []
         for idx, layer_w in enumerate(model.get_weights()):
             # if len(model.layers[i]) > 0:
             logging.info("Sending layer %d, shape %s", idx, str(layer_w.shape))
-            self.__send(data=layer_w, label=idx)    
+            feature = self.__send(data=layer_w, label=idx)
+            record_metadata.append(feature.get(timeout=10))       
             self.__producer.flush()
 
         self.__update_partitions()
-        control_msg = self.__send_control_msg_metrics(metrics, version, num_data)
+        control_msg = self.__send_control_msg_metrics(metrics, version, num_data, record_metadata)
 
         return control_msg
         

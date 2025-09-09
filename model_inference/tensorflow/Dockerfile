@@ -1,6 +1,5 @@
-# --build-arg TFTAG=2.7.0-gpu for GPU version
-ARG TFTAG=2.7.0 
-FROM tensorflow/tensorflow:${TFTAG}
+ARG BASEIMG=python:3.9
+FROM --platform=linux/arm64 ${BASEIMG}
 
 # set work directory
 WORKDIR /usr/src/app
@@ -8,6 +7,12 @@ WORKDIR /usr/src/app
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    librdkafka-dev \
+    libhdf5-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # install dependencies
 RUN pip install --upgrade pip

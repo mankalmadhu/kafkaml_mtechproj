@@ -4,7 +4,7 @@ django-cors-headers==3.2.1
 django-model-utils==4.0.0
 kubernetes==11.0.0
 gunicorn==20.0.4 
-confluent-kafka==1.8.2
+confluent-kafka==2.3.0
 channels==3.0.4
 daphne==3.0.2
 py-solc-x==2.0.2

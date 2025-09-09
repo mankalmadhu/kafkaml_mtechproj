@@ -12,6 +12,10 @@ spec:
   - name: "9092"
     port: 9092
     targetPort: 9092
+  - name: "9095"
+    port: 9095
+    targetPort: 9095
+
   selector:
     name: kafka
   type: LoadBalancer

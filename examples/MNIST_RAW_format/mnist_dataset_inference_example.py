@@ -1,11 +1,13 @@
 import tensorflow as tf
 import logging
 from kafka import KafkaProducer, KafkaConsumer
+import numpy as np
+
 
 logging.basicConfig(level=logging.INFO)
 
-INPUT_TOPIC = 'minst-in'
-OUTPUT_TOPIC = 'minst-out'
+INPUT_TOPIC = 'mnist_in'
+OUTPUT_TOPIC = 'mnist_out'
 BOOTSTRAP_SERVERS= '127.0.0.1:9094'
 ITEMS_TO_PREDICT = 10
 
@@ -14,7 +16,8 @@ print("Datasize minst: ", x_test.shape)
 
 producer = KafkaProducer(bootstrap_servers=BOOTSTRAP_SERVERS)
 """Creates a producer to send the values to predict"""
-for i in range (0, ITEMS_TO_PREDICT):
+random_indices = np.random.choice(x_test.shape[0], ITEMS_TO_PREDICT, replace=False)
+for i in random_indices:
   producer.send(INPUT_TOPIC, x_test[i].tobytes())
   """Sends the value to predict to Kafka"""
 producer.flush()

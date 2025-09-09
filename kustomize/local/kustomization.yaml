@@ -1,8 +1,9 @@
+
 resources:
   - resources/namespace.yaml
   - resources/kafka-deployment.yaml
   - resources/kafka-service.yaml
-  - "../v1.0"
+  - "../base"
 
 namespace: kafkaml
 
@@ -11,7 +12,28 @@ configMapGenerator:
     behavior: merge
     literals:
       - brokers=kafka:9092
+      - tensorflow.training.image=host.docker.internal:50000/model_training_tensorflow:latest
+      - tensorflow.inference.image=host.docker.internal:50000/model_inference_tensorflow:latest
+      - pytorch.training.image=host.docker.internal:50000/pytorch_model_training:latest
+      - pytorch.inference.image=host.docker.internal:50000/pytorch_model_inference:latest
+
 images:
   - name: kafka
     newName: docker.io/bitnami/kafka
     newTag: "3.4.0-debian-11-r22"
+  - name: kafka-ml-backend
+    newName: host.docker.internal:50000/backend
+    newTag: latest
+  - name: kafka-ml-frontend
+    newName: host.docker.internal:50000/frontend
+    newTag: latest
+  - name: kafka-ml-kafka_control_logger
+    newName: host.docker.internal:50000/kafka_control_logger
+    newTag: latest
+  - name: kafka-ml-pthexecutor
+    newName: host.docker.internal:50000/pthexecutor
+    newTag: latest
+  - name: kafka-ml-tfexecutor
+    newName: host.docker.internal:50000/mlcode_executor_tfexecutor
+    newTag: latest
+

@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: federated-training-debug-worker-test123
+  namespace: kafkaml
+spec:
+  ttlSecondsAfterFinished: 100
+  template:
+    spec:
+      containers:
+      - image: host.docker.internal:50000/federated_model_training_tensorflow:latest
+        name: training
+        env:
+        - name: KML_CLOUD_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        - name: DATA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        - name: DATA_TOPIC
+          value: FED-DEBUG-data_topic
+        - name: UNSUPERVISED_TOPIC
+          value: ""
+        - name: INPUT_FORMAT
+          value: RAW
+        - name: INPUT_CONFIG
+          value: '{"type": "float32", "data_type": "float32", "data_reshape": "784", "label_type": "float32", "label_reshape": "10"}'
+        - name: VALIDATION_RATE
+          value: "0.1"
+        - name: TEST_RATE
+          value: "0.1"
+        - name: TOTAL_MSG
+          value: "500"
+        - name: FEDERATED_MODEL_ID
+          value: ddy6heod
+        - name: FEDERATED_CLIENT_ID
+          value: test123
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: "all"
+        - name: CASE
+          value: "1"
+        imagePullPolicy: Always
+      restartPolicy: OnFailure
+  backoffLimit: 1

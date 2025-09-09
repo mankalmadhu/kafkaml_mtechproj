@@ -78,6 +78,7 @@ if __name__ == '__main__':
           data['time'] = datetime.datetime.utcfromtimestamp(msg.timestamp/1000.0).strftime("%Y-%m-%dT%H:%M:%S%Z")
           ok = False
           logging.info("Sending datasource to backend: [%s]", data)
+          logging.info("sending to URL: [%s]", url)
           while not ok and retry < RETRIES:
             try:
               request = Request(url, json.dumps(data).encode(), headers={'Content-type': 'application/json'})

@@ -108,7 +108,7 @@ class KafkaMLSink(object):
                 tp = TopicPartition(topic, p)
                 self.__consumer.assign([tp])
                 self.__consumer.seek_to_end(tp)
-                last_offset = self.__consumer.position(tp)
+                last_offset = self.__consumer.position(tp,100) or 0
                 dic[tp.partition] = {'offset': last_offset}
         return dic
     
