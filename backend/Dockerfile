@@ -50,13 +50,22 @@ RUN cp /usr/local/bin/solc /root/.solcx/solc-v0.8.20
 RUN solc --version
 RUN /root/.solcx/solc-v0.8.20 --version
 
+# Install Foundry (Anvil) for local blockchain server
+WORKDIR /tmp
+RUN curl -L https://foundry.paradigm.xyz | bash
+# Add foundry to PATH and run foundryup
+ENV PATH="/root/.foundry/bin:$PATH"
+RUN /root/.foundry/bin/foundryup
+
+# Verify Anvil installation
+RUN anvil --version
+
 # Clean up build artifacts
 WORKDIR /usr/src/app
-RUN rm -rf /tmp/solidity_0.8.20 /tmp/solidity_0.8.20.tar.gz
-
+RUN rm -rf /tmp/solidity_0.8.20 
 # copy project
 COPY . /usr/src/app/
 
-
+# Copy anvil state file if it exists
 RUN chmod +x ./start.sh
 CMD ["./start.sh"]

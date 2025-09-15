@@ -26,7 +26,7 @@ data:
 
   # BlockChain-based Federated Learning Configuration
   fedml.blockchain.enable: "1"
-  fedml.blockchain.rpc-url: http://localhost:8545
+  fedml.blockchain.rpc-url: http://backend:8545
   fedml.blockchain.chain-id: "31337"
   fedml.blockchain.network-id: "1999"
   fedml.blockchain.wallet-address: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"

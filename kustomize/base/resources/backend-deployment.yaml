@@ -22,6 +22,7 @@ spec:
           name: backend
           ports:
             - containerPort: 8000
+            - containerPort: 8545
           imagePullPolicy: Always
           env:
             - name: BOOTSTRAP_SERVERS
