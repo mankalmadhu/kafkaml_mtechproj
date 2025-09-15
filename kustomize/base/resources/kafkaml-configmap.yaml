@@ -25,12 +25,12 @@ data:
   # debug: "0"
 
   # BlockChain-based Federated Learning Configuration
-  fedml.blockchain.enable: "0"
-  fedml.blockchain.rpc-url: http://blockchain:8000
-  fedml.blockchain.chain-id: "1337"
+  fedml.blockchain.enable: "1"
+  fedml.blockchain.rpc-url: http://localhost:8545
+  fedml.blockchain.chain-id: "31337"
   fedml.blockchain.network-id: "1999"
-  fedml.blockchain.wallet-address: "0x0"
-  fedml.blockchain.wallet-key: ffff
+  fedml.blockchain.wallet-address: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+  fedml.blockchain.wallet-key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
   fedml.blockchain.blockscout-link: "0"
   fedml.blockchain.blockscout-url: http://blockscout:8000
   fedml.blockchain.token-name: KafkaML-FedToken

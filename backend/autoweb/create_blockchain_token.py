@@ -1,3 +1,4 @@
+import logging
 from web3 import Web3
 from solcx import compile_standard, install_solc, set_solc_version
 import json
@@ -78,7 +79,7 @@ def sign_and_send_transaction(w3: Web3, tx: dict, wallet_key: str):
 
 
 def create_token(token_name: str, token_symbol: str, rpc_url: str, chain_id: int, solc_version: str, wallet_address: str, wallet_key: str):
-    install_solc(solc_version)
+    # install_solc(solc_version)
     set_solc_version(solc_version)
 
     w3 = Web3(Web3.HTTPProvider(rpc_url))
