@@ -3,7 +3,7 @@ numpy<1.24
 scikit-learn
 seaborn
 confluent-kafka
-web3
+web3==5.28.0
 protobuf
 tensorflow==2.12.0
 tensorflow-io==0.32.0

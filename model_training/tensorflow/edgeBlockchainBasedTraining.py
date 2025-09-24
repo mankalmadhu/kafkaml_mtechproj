@@ -8,6 +8,7 @@ from decoders import *
 
 from FederatedKafkaMLModelSink import FederatedKafkaMLModelSink
 from KafkaModelEngine import KafkaModelEngine
+from trigger_federated_training_job import trigger_federated_training_job
 
 # TODO: Implement Incremental and Distributed Blockchain Federated Training if needed or going to be implemented
 # from singleFederatedIncrementalTraining import SingleBlockchainFederatedIncrementalTraining
@@ -36,6 +37,22 @@ def aggregate_model(model, trained_model, aggregation_strategy, control_msg):
     raise NotImplementedError('Aggregation strategy not implemented')
   
   return model
+
+def convert_numpy_types(obj):
+  """Convert NumPy types to Python native types for JSON serialization"""
+  if isinstance(obj, np.floating):
+      return float(obj)
+  elif isinstance(obj, np.integer):
+      return int(obj)
+  elif isinstance(obj, np.ndarray):
+      return obj.tolist()
+  elif isinstance(obj, dict):
+      return {key: convert_numpy_types(value) for key, value in obj.items()}
+  elif isinstance(obj, list):
+      return [convert_numpy_types(item) for item in obj]
+  else:
+      return obj
+
 
 def EdgeBlockchainBasedTraining(training):
     training.get_models()
@@ -89,7 +106,10 @@ def EdgeBlockchainBasedTraining(training):
       logging.info("Model sent to Federated devices")
       
       if rounds == 0:
-        training.save_model_architecture(json.dumps(control_msg['training_settings']), control_msg['model_architecture'], json.dumps(control_msg['model_compile_args']))
+        logging.info("Control message: %s", control_msg)
+        training_settings = json.dumps(convert_numpy_types(control_msg['training_settings']))
+        model_compile_args = json.dumps(convert_numpy_types(control_msg['model_compile_args']))
+        training.save_model_architecture(training_settings, control_msg['model_architecture'], model_compile_args)
       else:
         training.save_update_along_with_global_model(last_client_model_topic, control_msg['topic'])
 

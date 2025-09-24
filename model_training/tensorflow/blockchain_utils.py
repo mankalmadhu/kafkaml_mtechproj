@@ -5,7 +5,7 @@ import urllib.parse
 from web3 import Web3
 from solcx import compile_standard, install_solc, set_solc_version
 
-SOLC_VERSION = "0.8.6"
+SOLC_VERSION = "0.8.20"
 
 
 def create_federated_learning_smart_contract(
@@ -27,7 +27,7 @@ def create_federated_learning_smart_contract(
     """
 
     # Install the solidity compiler
-    install_solc(SOLC_VERSION)
+    # install_solc(SOLC_VERSION)
 
     # Set the solidity compiler version
     set_solc_version(SOLC_VERSION)

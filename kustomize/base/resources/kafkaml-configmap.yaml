@@ -12,6 +12,8 @@ data:
   backend.url: http://backend:8000
   backend.address: backend:8000 # TODO replace this
   backend.allowedhosts: 127.0.0.1,localhost,backend
+  blockchain.address: blockchain:8545
+  blockchain.allowedhosts: 127.0.0.1,localhost,blockchain
   tfexecutor.url: http://tfexecutor:8001/
   pthexecutor.url: http://pthexecutor:8002/
 
@@ -26,7 +28,8 @@ data:
 
   # BlockChain-based Federated Learning Configuration
   fedml.blockchain.enable: "1"
-  fedml.blockchain.rpc-url: http://backend:8545
+  fedml.blockchain.rpc-url: http://blockchain:8545
+  fedml.blockchain.rpc.localhost-url: http://localhost:8545
   fedml.blockchain.chain-id: "31337"
   fedml.blockchain.network-id: "1999"
   fedml.blockchain.wallet-address: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"

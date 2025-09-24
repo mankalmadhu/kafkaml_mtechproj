@@ -7,9 +7,20 @@ spec:
     name: pod-backend
   type: LoadBalancer
   ports:
-  - protocol: "TCP"
+  - name: "backend"
+    protocol: "TCP"
     port: 8000
     targetPort: 8000
-  - protocol: "TCP"
-    port: 8545
-    targetPort: 8545
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blockchain           # Service name for DNS
+spec:
+  selector:
+    name: pod-backend       # This needs to match the pod's 'name' label
+  ports:
+    - name: blockchain
+      protocol: TCP
+      port: 8545            # Port exposed to cluster
+      targetPort: 8545

@@ -136,5 +136,13 @@ __pycache__/
 local_settings.py
 federated_test_env/
 
+# Virtual environments
+venv/
+**/venv/
+.venv/
+**/.venv/
+venv*/
+**/venv*/
+
 .env
 db.sqlite3

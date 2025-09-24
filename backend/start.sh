@@ -3,14 +3,14 @@
 # Start Anvil blockchain server as background process
 if [ -f "/usr/src/app/anvil_state.json" ]; then
     echo "Starting Anvil with saved state..."
-    nohup anvil --load-state /usr/src/app/anvil_state.json > /usr/src/app/anvil.log 2>&1 &
+    nohup anvil --load-state /usr/src/app/anvil_state.json --host 0.0.0.0 > /usr/src/app/anvil.log 2>&1 &
 else
     echo "Starting Anvil with default state..."
     nohup anvil > /usr/src/app/anvil.log 2>&1 &
 fi
 
-# Wait a moment for Anvil to start
-sleep 2
+# Wait for Anvil to start
+sleep 5
 
 # Check if Anvil is running
 if pgrep -f "anvil" > /dev/null; then

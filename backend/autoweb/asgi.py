@@ -24,7 +24,7 @@ if os.environ.get('ENABLE_FEDML_BLOCKCHAIN') == '1':
         token_address, abi = create_blockchain_token.create_token(
             token_name=os.environ.get('FEDML_BLOCKCHAIN_TOKEN_NAME', "KafkaML Token"),
             token_symbol=os.environ.get('FEDML_BLOCKCHAIN_TOKEN_SYMBOL', "KML"),
-            rpc_url=os.environ.get('FEDML_BLOCKCHAIN_RPC_URL', "http://localhost:8545"),
+            rpc_url="http://localhost:8545",
             chain_id=int(os.environ.get('FEDML_BLOCKCHAIN_CHAIN_ID', 1337)),
             solc_version="0.8.20",
             wallet_address=os.environ.get('FEDML_BLOCKCHAIN_WALLET_ADDRESS', None),

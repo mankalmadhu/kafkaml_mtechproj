@@ -152,6 +152,9 @@
         <br>
         Federated strategy settings
         <br>
+        <div class="selector">
+          <mat-checkbox name="blockchain" [ngModel]="deployment.blockchain" (change)="blockchainControl($event)">Blockchain-traced training</mat-checkbox>
+        </div>
 
         <mat-form-field>
           <mat-label>Number of aggregation rounds</mat-label>
