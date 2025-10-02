@@ -19,7 +19,7 @@ configMapGenerator:
 
 images:
   - name: kafka
-    newName: docker.io/bitnami/kafka
+    newName: docker.io/bitnamilegacy/kafka
     newTag: "3.4.0-debian-11-r22"
   - name: kafka-ml-backend
     newName: host.docker.internal:50000/backend
