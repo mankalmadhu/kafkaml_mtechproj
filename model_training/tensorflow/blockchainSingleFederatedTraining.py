@@ -40,6 +40,12 @@ class BlockchainSingleFederatedTraining(MainTraining):
         eth_blockscout_url (str): Ethereum blockscout URL
     """
 
+    def random_sleep(self):
+        """Sleep for a random duration between 300-500ms to prevent nonce conflicts"""
+        import time
+        import random
+        time.sleep(random.uniform(0.3, 0.5))
+
     def __init__(self):
         """Loads the environment information"""
 
@@ -286,6 +292,9 @@ class BlockchainSingleFederatedTraining(MainTraining):
         """Gets the last model from the blockchain queue"""
 
         last_model = self.contract.functions.getQueueFirstElement().call()
+        
+        # Add random delay to prevent nonce conflicts
+        self.random_sleep()
 
         nonce = self.web3_connection.eth.getTransactionCount(self.eth_wallet_address)
         tx_hash = self.contract.functions.dequeueModel().transact(

@@ -22,7 +22,7 @@ RETRIES = 10
 SLEEP_BETWEEN_REQUESTS = 5
 '''Number of seconds between failed requests'''
 
-MAX_MESSAGES_TO_COMMIT = 16
+MAX_MESSAGES_TO_COMMIT = 10
 '''Maximum number of messages to commit at a time'''
 
 def load_environment_vars():
@@ -133,13 +133,13 @@ if __name__ == '__main__':
       if msg is None:
         continue
       if msg.error():
-        print("Consumer error: {}".format(msg.error()))
+        logging.error("Consumer error: {}".format(msg.error()))
         continue
 
       try:
         start_inference = time.time()
 
-        logging.debug("Message received for prediction")
+        logging.info("Message received for prediction")
 
         input_decoded = decoder.decode(msg.value())
         """Decodes the message received"""
@@ -153,7 +153,7 @@ if __name__ == '__main__':
         prediction_value = prediction_output.tolist()[0]
         """Gets the prediction value"""
 
-        logging.debug("Prediction done: %s", str(prediction_value))
+        logging.info("Prediction done: %s", str(prediction_value))
 
         response = {
           'values': prediction_value
@@ -177,13 +177,13 @@ if __name__ == '__main__':
           """Flush the message to be sent now"""
         """Sends the message to Kafka"""
 
-        logging.debug("Prediction sent to Kafka")
+        logging.info("Prediction sent to Kafka")
 
         if commitedMessages >= MAX_MESSAGES_TO_COMMIT:          
           consumer.commit()
           commitedMessages = 0
           """Commit the consumer offset after processing the message"""
-          logging.debug("Commited messages to Kafka")
+          logging.info("Commited messages to Kafka")
 
         end_inference = time.time()
         logging.debug("Total inference time: %s", str(end_inference - start_inference))
