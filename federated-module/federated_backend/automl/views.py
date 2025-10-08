@@ -95,9 +95,9 @@ def deploy_on_kubernetes(datasource_item, model_item, framework, case):
         config.load_incluster_config() # To run inside the container
         # config.load_kube_config() # To run externally
         logging.info("Connection to Kubernetes %s %s", os.environ.get('KUBE_TOKEN'), os.environ.get('KUBE_HOST'))
-        api_client = kubernetes_config(token=os.environ.get('KUBE_TOKEN'), external_host=os.environ.get('KUBE_HOST'))
-        api_instance = client.BatchV1Api(api_client)
-        # api_instance = client.BatchV1Api()
+        #api_client = kubernetes_config(token=os.environ.get('KUBE_TOKEN'), external_host=os.environ.get('KUBE_HOST'))
+        #api_instance = client.BatchV1Api(api_client)
+        api_instance = client.BatchV1Api()
 
         # TODO: Conforme incrementen los frameworks y las distintas combinaciones de metodologias, introducir aquí su imagen y sus parámetros
         if framework == "tf":

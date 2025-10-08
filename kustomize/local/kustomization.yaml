@@ -4,6 +4,7 @@ resources:
   - resources/kafka-deployment.yaml
   - resources/kafka-service.yaml
   - "../base"
+  - "../../federated-module/kustomize/base"
 
 namespace: kafkaml
 
@@ -16,6 +17,17 @@ configMapGenerator:
       - tensorflow.inference.image=host.docker.internal:50000/model_inference_tensorflow:latest
       - pytorch.training.image=host.docker.internal:50000/pytorch_model_training:latest
       - pytorch.inference.image=host.docker.internal:50000/pytorch_model_inference:latest
+  - name: federated-kafkaml-configmap
+    behavior: merge
+    literals:
+      - kml.cloud.brokers=kafka:9092
+      - federated.data.brokers=kafka:9092
+      - federated.data.control.topic=FEDERATED_DATA_CONTROL_TOPIC
+      - federated.model.control.topic=FEDERATED_MODEL_CONTROL_TOPIC
+      - backend.url=http://federated-backend:8085
+      - backend.allowedhosts=127.0.0.1,localhost,federated-backend
+      - federated.tensorflow.training.image=host.docker.internal:50000/federated_model_training_tensorflow:latest
+      - federated.pytorch.training.image=host.docker.internal:50000/federated_model_training_tensorflow:latest
 
 images:
   - name: kafka
@@ -35,5 +47,14 @@ images:
     newTag: latest
   - name: kafka-ml-tfexecutor
     newName: host.docker.internal:50000/mlcode_executor_tfexecutor
+    newTag: latest
+  - name: federated-kafka-ml-backend
+    newName: host.docker.internal:50000/federated_backend
+    newTag: latest
+  - name: federated-kafka-ml-data_control_logger
+    newName: host.docker.internal:50000/federated_data_control_logger
+    newTag: latest
+  - name: federated-kafka-ml-model_control_logger
+    newName: host.docker.internal:50000/federated_model_control_logger
     newTag: latest
 
