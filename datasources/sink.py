@@ -79,6 +79,7 @@ class KafkaMLSink(object):
             bootstrap_servers=self.boostrap_servers,
             request_timeout_ms=60000,
         )
+        self.record_metadata = []
         self.__init_partitions()
         logging.info("Partitions received [%s]", str(self.__partitions))
 
@@ -119,6 +120,7 @@ class KafkaMLSink(object):
         if self.unsupervised_topic is not None:
             self.__unsupervised_partitions = self.__get_partitions_and_offsets(self.unsupervised_topic)
 
+
     def __update_partitions(self, topic, partitions):
         """Updates the offsets and length in the topic defined after sending data"""
         
@@ -153,9 +155,14 @@ class KafkaMLSink(object):
 
     def __send_control_msg(self):
         """Sends control message to Apache Kafka with the information"""
+        offset = self.record_metadata[0].offset
+        length = len(self.record_metadata) + offset
+        topic_str = f'{self.topic}:{self.record_metadata[0].partition}:{offset}:{length}'
+        self.total_messages = len(self.record_metadata)
+
 
         dic = {
-            'topic': self.__stringify_partitions(self.topic, self.__partitions),
+            'topic': topic_str,
             'unsupervised_topic': self.__stringify_partitions(self.unsupervised_topic, self.__unsupervised_partitions) if self.unsupervised_topic is not None else None,
             'input_format': self.input_format,
             'description' : self.description,
@@ -163,7 +170,7 @@ class KafkaMLSink(object):
             'input_config' : self.input_config,
             'validation_rate' : self.validation_rate,
             'test_rate' : self.test_rate,
-            'total_msg': self.total_messages,
+            'total_msg': 100,
             'incremental': False
         }
         key = self.__object_to_bytes(self.deployment_id)
@@ -199,10 +206,13 @@ class KafkaMLSink(object):
         
         data=self.__object_to_bytes(data)
         label=self.__object_to_bytes(label)
+        
         if label is None:
-            self.__producer.send(self.topic, data)
+            feature = self.__producer.send(self.topic, data)
         else:
-            self.__producer.send(self.topic, key=label, value=data)
+            feature = self.__producer.send(self.topic, key=label, value=data)
+        
+        self.record_metadata.append(feature.get(timeout=1))
 
     def __unsupervised_send(self, data):
         """Converts data received to bytes and sends it to Apache Kafka"""

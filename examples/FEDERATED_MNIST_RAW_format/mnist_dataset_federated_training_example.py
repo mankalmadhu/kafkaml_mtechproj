@@ -13,7 +13,8 @@ with open('mnist_sample_input_format.json') as json_file:
     data_res = json.load(json_file)
 
 mnist = FederatedRawSink(boostrap_servers='localhost:9094', topic='mnist_fed', deployment_id=1, description='Mnist dataset', 
-                        dataset_restrictions=json.dumps(data_res), validation_rate=0.1, test_rate=0, control_topic='FEDERATED_DATA_CONTROL_TOPIC')
+                        dataset_restrictions=json.dumps(data_res), validation_rate=0.1, test_rate=0, control_topic='FEDERATED_DATA_CONTROL_TOPIC',data_type= "uint8"
+                        ,data_reshape='784', label_type='uint8', label_reshape='')
 
 (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
 

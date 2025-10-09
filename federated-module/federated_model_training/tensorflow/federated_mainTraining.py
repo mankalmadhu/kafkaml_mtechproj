@@ -80,9 +80,17 @@ class MainTraining(object):
 
         decoder = DecoderFactory.get_decoder(self.input_format, self.input_config)
         
+        data_topic = self.input_data_topic
+
+        if ':' in self.input_data_topic:
+            data_topic = self.input_data_topic.split(':')[0]
+            if not data_topic:
+                logging.error("Data topic is empty")
+                raise ValueError("Data topic is empty")
+        
         # Use the newer tfio.IODataset.from_kafka API instead of deprecated KafkaDataset
         self.kafka_dataset = tfio.IODataset.from_kafka(
-            self.input_data_topic, 
+            data_topic, 
             servers=self.data_bootstrap_server, 
             group=self.group_id,
             offset="latest", 
