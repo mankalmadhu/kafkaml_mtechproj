@@ -7,3 +7,4 @@ gunicorn
 confluent-kafka
 daphne
 whitenoise
+json_repair

@@ -51,13 +51,14 @@ class KafkaMLSink(object):
 
     def __init__(self, boostrap_servers, topic, deployment_id,
         input_format, description='', dataset_restrictions={},
-        validation_rate=0, test_rate=0, control_topic='KAFKA_ML_CONTROL_TOPIC', group_id='sink', unsupervised_topic=None):
+        validation_rate=0, test_rate=0, control_topic='KAFKA_ML_CONTROL_TOPIC', group_id='sink', unsupervised_topic=None, federated_string_id=None):
 
         self.boostrap_servers = boostrap_servers
         self.topic = topic
         self.deployment_id = deployment_id
         self.input_format = input_format
         self.unsupervised_topic = unsupervised_topic
+        self.federated_string_id = federated_string_id
         if self.unsupervised_topic == '':
             self.unsupervised_topic = None
         self.description = description
@@ -171,7 +172,8 @@ class KafkaMLSink(object):
             'validation_rate' : self.validation_rate,
             'test_rate' : self.test_rate,
             'total_msg': 100,
-            'incremental': False
+            'incremental': False,
+            'federated_string_id': self.federated_string_id
         }
         key = self.__object_to_bytes(self.deployment_id)
         data = json.dumps(dic).encode('utf-8')

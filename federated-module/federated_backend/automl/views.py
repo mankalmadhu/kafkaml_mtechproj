@@ -72,8 +72,34 @@ def parse_kwargs_fit(kwargs_fit):
     
     return json.dumps(dic)
 
+def check_federated_string_match(datasource_item, model_item):
+    """
+    Checks if datasource and model belong to the same federated deployment.
+    Note: This function assumes datasource_item has a fed_string_id (caller should check).
+    
+    Returns:
+        True if fed_string_ids match (collision should proceed)
+        False if fed_string_ids don't match or model doesn't have one (prevent collision)
+    """
+    datasource_fed_id = datasource_item.get('federated_string_id')
+    model_fed_id = model_item.get('federated_string_id')
+    
+    if model_fed_id:
+        match = datasource_fed_id == model_fed_id
+        logging.info("Federated string ID check: datasource=%s, model=%s, match=%s", 
+                   datasource_fed_id, model_fed_id, match)
+        return match
+    
+    logging.info("Datasource has fed_string_id (%s) but model doesn't - blocking collision", 
+               datasource_fed_id)
+    return False
+
 def check_colission(datasource_item, model_item, case):
     """Checks if the datasource and the model are compatible"""
+
+    # Check federated string ID if datasource has one
+    if datasource_item.get('federated_string_id'):
+        return check_federated_string_match(datasource_item, model_item)
 
     ds_input_config = json.loads(datasource_item['input_config'])
 
@@ -82,8 +108,16 @@ def check_colission(datasource_item, model_item, case):
     if (case in [3,4]) and len(aux_array) > 2:
         delimiter = ' '
         model_item['input_shape'] = delimiter.join(aux_array[:-1])
+    
+    dataset_restrictions = json.loads(datasource_item['dataset_restrictions'])
+    try:
+        data_restriction = json.loads(model_item['data_restriction'])
+    except Exception as e:
+        logging.error("Error parsing data restriction: %s", e)
+        import json_repair
+        data_restriction = json_repair.loads(model_item['data_restriction'])
 
-    if ds_input_config['data_reshape'] == model_item['input_shape'] and json.loads(datasource_item['dataset_restrictions']) == json.loads(model_item['data_restriction']):
+    if ds_input_config['data_reshape'] == model_item['input_shape'] and dataset_restrictions == data_restriction:
         if ((case in [1,3,5]) and datasource_item['total_msg'] >= model_item['min_data']) or (case in [2,4]):
             return True
     

@@ -33,6 +33,7 @@ class Datasource(models.Model):
     input_config = models.TextField(blank=True)
 
     incremental = models.BooleanField(default=False)
+    federated_string_id = models.CharField(max_length=8, blank=True, null=True)
 
     topic = models.TextField()
     unsupervised_topic = models.TextField(blank=True, null=True)

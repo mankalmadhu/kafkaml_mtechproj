@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """
-Script to delete and recreate a Kafka topic, ensuring it has 0 messages.
+Script to manage Kafka topics:
+- Delete and recreate a topic, ensuring it has 0 messages (reset)
+- Create a topic if it doesn't already exist
+
 Usage: python reset_kafka_topic.py [topic_name]
-If no topic_name is provided, the script will list all topics and ask for selection.
+If no topic_name is provided, the script will run in interactive mode with multiple options.
 """
 
 import sys
@@ -251,6 +254,40 @@ def reset_single_topic(topic_name):
         logging.error("💥 Topic reset failed!")
         return False
 
+def create_topic_if_not_exists(topic_name):
+    """Create a topic only if it doesn't already exist"""
+    try:
+        kafka_pod = get_kafka_pod()
+        
+        # Check if topic already exists
+        if topic_exists(kafka_pod, topic_name):
+            logging.info(f"ℹ️  Topic '{topic_name}' already exists!")
+            message_count = get_message_count(kafka_pod, topic_name)
+            if message_count >= 0:
+                print(f"   Current message count: {message_count}")
+            return True
+        
+        # Topic doesn't exist, create it
+        logging.info(f"Creating new topic: {topic_name}")
+        if not create_topic(kafka_pod, topic_name):
+            logging.error(f"Failed to create topic {topic_name}")
+            return False
+        
+        # Verify topic was created
+        time.sleep(2)  # Wait for topic creation to complete
+        if topic_exists(kafka_pod, topic_name):
+            logging.info(f"✅ Topic '{topic_name}' created successfully!")
+            return True
+        else:
+            logging.error(f"❌ Failed to verify topic '{topic_name}' was created")
+            return False
+            
+    except Exception as e:
+        logging.error(f"❌ Error creating topic {topic_name}: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
 def interactive_mode():
     """Interactive mode that runs until user quits"""
     print("\n" + "="*60)
@@ -265,12 +302,13 @@ def interactive_mode():
         try:
             print("\n📋 What would you like to do?")
             print("1. List and select a topic to reset")
-            print("2. Enter a topic name directly")
-            print("3. Quit (q)")
+            print("2. Enter a topic name directly to reset")
+            print("3. Create a topic (if it doesn't already exist)")
+            print("4. Quit (q)")
             
-            choice = input("\n🔢 Enter your choice (1-3) or 'q' to quit: ").strip().lower()
+            choice = input("\n🔢 Enter your choice (1-4) or 'q' to quit: ").strip().lower()
             
-            if choice in ['q', 'quit', '3']:
+            if choice in ['q', 'quit', '4']:
                 print("\n👋 Goodbye! Thanks for using the Kafka Topic Reset Tool!")
                 break
             
@@ -289,17 +327,26 @@ def interactive_mode():
                         reset_single_topic(topic_name)
                     else:
                         print(f"❌ Topic '{topic_name}' does not exist!")
-                        print("💡 Use option 1 to see available topics.")
+                        print("💡 Use option 1 to see available topics or option 3 to create it.")
+                else:
+                    print("❌ Topic name cannot be empty!")
+                # Continue the loop for another operation
+            
+            elif choice == '3':
+                # Create topic if it doesn't exist
+                topic_name = input("\n📝 Enter the topic name to create: ").strip()
+                if topic_name:
+                    create_topic_if_not_exists(topic_name)
                 else:
                     print("❌ Topic name cannot be empty!")
                 # Continue the loop for another operation
             
             else:
-                print("❌ Please enter 1, 2, 3, or 'q'")
+                print("❌ Please enter 1, 2, 3, 4, or 'q'")
             
             # Ask if user wants to continue
-            if choice in ['1', '2']:
-                continue_choice = input("\n🔄 Would you like to reset another topic? (y/N): ").strip().lower()
+            if choice in ['1', '2', '3']:
+                continue_choice = input("\n🔄 Would you like to perform another operation? (y/N): ").strip().lower()
                 if continue_choice not in ['y', 'yes']:
                     print("\n👋 Goodbye! Thanks for using the Kafka Topic Reset Tool!")
                     break

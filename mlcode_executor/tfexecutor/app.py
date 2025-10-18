@@ -69,13 +69,17 @@ app = Flask(__name__)
 
 @app.route('/exec_tf/', methods=['POST'])
 def tensorflow_executor():
+    print("Executing tensorflow executor")
     try:        
         data = json.loads(request.data)
-        logging.info("Data code received %s", data)
+        print("Data code received %s", data)
         model = exec_model(data['imports_code'], data['model_code'], data['distributed'])
+        print("Model executed")
 
         if data['request_type'] == "check":     
-            model.summary()           
+            print("Checking model")
+            model.summary() 
+            print("Model checked")
             return Response(status=200)
         elif data['request_type'] == 'load_model':
             filename = "model.h5"
@@ -94,6 +98,7 @@ def tensorflow_executor():
 
         return Response(status=404)
     except Exception as e:
+        print("Error executing model %s", e)
         return Response(status=400) 
 
 @app.route('/check_deploy_config/', methods=['POST'])

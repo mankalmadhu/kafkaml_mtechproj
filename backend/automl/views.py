@@ -154,6 +154,12 @@ class ModelList(generics.ListCreateAPIView):
                 if serializer.is_valid():
                     obj=serializer.save()
                     return HttpResponse(status=status.HTTP_201_CREATED)
+                else:
+                    logging.error("Serializer validation failed: %s", serializer.errors)
+                    return HttpResponse(f"Serializer validation failed: {serializer.errors}", status=status.HTTP_400_BAD_REQUEST)
+            else:
+                logging.error("TF Executor returned status %s", resp.status_code)
+                logging.error("TF Executor response: %s", resp.text)
             return HttpResponse("Information not valid", status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return HttpResponse(str(e), status=status.HTTP_400_BAD_REQUEST)
@@ -447,6 +453,10 @@ class DeploymentList(generics.ListCreateAPIView):
                 data.pop('pth_kwargs_fit') 
                 data.pop('pth_kwargs_val')
                 pth_kwargs_fit_empty, pth_kwargs_val_empty = True, True
+            
+            if data.get('federated', False):
+                data['federated_string_id'] = ''.join(random.choices(string.digits + string.ascii_lowercase, k=8))
+
 
             serializer = DeployDeploymentSerializer(data=data)
             if serializer.is_valid():
@@ -486,7 +496,8 @@ class DeploymentList(generics.ListCreateAPIView):
                         pth_resp = requests.post(settings.PYTORCH_EXECUTOR_URL+"check_deploy_config/", data=json.dumps(data_to_send))
                         if pth_resp.status_code != 200:
                             raise ValueError('Some PyTorch arguments are not valid.')
-                                        
+                    
+                                      
                     deployment = serializer.save()
 
                     for result in TrainingResult.objects.filter(deployment=deployment):
@@ -566,8 +577,8 @@ class DeploymentList(generics.ListCreateAPIView):
                                     # resp = api_instance.create_namespaced_job(body=job_manifest, namespace=settings.KUBE_NAMESPACE)
                                     # logging.info("Job created. status='%s'" % str(resp.status))
                                 else:
-                                    # Generate random string of 5 characters
-                                    federated_string_id = ''.join(random.choices(string.digits + string.ascii_lowercase, k=8))
+                                    # Use pre-generated federated_string_id from deployment
+                                    federated_string_id = deployment.federated_string_id
                                     
                                     job_manifest = {
                                         'apiVersion': 'batch/v1',
@@ -671,8 +682,8 @@ class DeploymentList(generics.ListCreateAPIView):
                                     # resp = api_instance.create_namespaced_job(body=job_manifest, namespace=settings.KUBE_NAMESPACE)
                                     # logging.info("Job created. status='%s'" % str(resp.status))
                                 else:
-                                    # Generate random string of 5 characters
-                                    federated_string_id = ''.join(random.choices(string.digits + string.ascii_lowercase, k=8))
+                                    # Use pre-generated federated_string_id from deployment
+                                    federated_string_id = deployment.federated_string_id
                                     
                                     job_manifest = {
                                         'apiVersion': 'batch/v1',
@@ -789,8 +800,8 @@ class DeploymentList(generics.ListCreateAPIView):
                                     # resp = api_instance.create_namespaced_job(body=job_manifest, namespace=settings.KUBE_NAMESPACE)
                                     # logging.info("Job created. status='%s'" % str(resp.status))
                                 else:
-                                    # Generate random string of 5 characters
-                                    federated_string_id = ''.join(random.choices(string.digits + string.ascii_lowercase, k=8))
+                                    # Use pre-generated federated_string_id from deployment
+                                    federated_string_id = deployment.federated_string_id
                                     
                                     job_manifest = {
                                         'apiVersion': 'batch/v1',
@@ -889,8 +900,8 @@ class DeploymentList(generics.ListCreateAPIView):
                                     # resp = api_instance.create_namespaced_job(body=job_manifest, namespace=settings.KUBE_NAMESPACE)
                                     # logging.info("Job created. status='%s'" % str(resp.status))
                                 else:
-                                    # Generate random string of 5 characters
-                                    federated_string_id = ''.join(random.choices(string.digits + string.ascii_lowercase, k=8))
+                                    # Use pre-generated federated_string_id from deployment
+                                    federated_string_id = deployment.federated_string_id
                                     
                                     job_manifest = {
                                         'apiVersion': 'batch/v1',

@@ -1,0 +1,20 @@
+# KafkaML Automation Requirements
+# Install with: pip install -r requirements_automation.txt
+
+# Core dependencies
+tensorflow>=2.0.0,<3.0.0
+kafka-python>=2.0.0
+requests>=2.25.0
+pyyaml>=5.4.0
+numpy>=1.19.0
+
+# Optional but recommended
+python-dateutil>=2.8.0
+colorlog>=6.0.0  # For colored console output
+
+# For development/testing
+pytest>=7.0.0
+pytest-cov>=3.0.0
+black>=22.0.0
+flake8>=4.0.0
+
