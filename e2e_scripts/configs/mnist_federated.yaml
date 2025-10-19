@@ -1,0 +1,142 @@
+# KafkaML MNIST Federated Learning Configuration
+# This configuration is for the modular E2E automation pipeline
+
+# Dataset configuration
+dataset:
+  type: mnist  # Dataset type: mnist, occupancy, etc.
+  train_samples: 1000
+  test_samples: 500
+
+# Backend API configuration
+backend:
+  url: http://localhost:9090
+
+# Kafka configuration
+kafka:
+  bootstrap_servers: localhost:9094
+
+# Model configuration
+model:
+  name: mnist_federated_model
+  description: MNIST federated learning model with blockchain
+  framework: tf  # TensorFlow
+  distributed: false
+  
+  # Python imports required for model
+  imports: |
+    import tensorflow as tf
+    from tensorflow import keras
+    from tensorflow.keras import layers
+  
+  # Model architecture code
+  code: |
+    model = keras.Sequential([
+        layers.Dense(128, activation='relu', input_shape=(784,)), 
+        layers.Dense(64, activation="relu"),
+        layers.Dropout(0.2),
+        layers.Dense(10, activation="softmax")
+    ])
+    
+    model.compile(
+        optimizer="adam",
+        loss="sparse_categorical_crossentropy",
+        metrics=["accuracy"]
+    )
+
+# Configuration (association of models)
+configuration:
+  name: mnist_fed_config
+  description: Configuration for MNIST federated training
+
+# Deployment configuration
+deployment:
+  batch: 32
+  epochs: 3  # Epochs per aggregation round
+  optimizer: adam
+  learning_rate: 0.001
+  loss: sparse_categorical_crossentropy
+  metrics: sparse_categorical_accuracy
+  
+  # Federated learning settings
+  federated: true
+  blockchain: true  # Enable blockchain logging
+  agg_rounds: 5    # Number of aggregation rounds
+  min_data: 100    # Minimum data samples required
+  agg_strategy: FedAvg  # Aggregation strategy
+  
+  # Data restriction (must match dataset)
+  data_restriction:
+    features:
+      label:
+        num_classes: 10
+        names:
+          - "0"
+          - "1"
+          - "2"
+          - "3"
+          - "4"
+          - "5"
+          - "6"
+          - "7"
+          - "8"
+          - "9"
+    supervised_keys:
+      input: image
+      output: label
+
+# Data injection configuration
+data_injection:
+  bootstrap_servers: localhost:9094
+  topic: mnist_fed
+  description: MNIST dataset for federated training
+  validation_rate: 0.1  # 10% for validation
+  test_rate: 0.0        # 0% for test
+  control_topic: FEDERATED_DATA_CONTROL_TOPIC
+  
+  # Data format
+  data_type: uint8
+  data_reshape: "784"  # 28*28 flattened
+  label_type: uint8
+  label_reshape: ""
+  
+  # Dataset restrictions (must match deployment)
+  dataset_restrictions:
+    features:
+      label:
+        num_classes: 10
+        names:
+          - "0"
+          - "1"
+          - "2"
+          - "3"
+          - "4"
+          - "5"
+          - "6"
+          - "7"
+          - "8"
+          - "9"
+    supervised_keys:
+      input: image
+      output: label
+
+# Inference configuration
+inference:
+  replicas: 1
+  input_format: RAW
+  input_config:
+    data_type: uint8
+    data_reshape: "784"
+  input_topic: mnist_in
+  output_topic: mnist_out
+  num_predictions: 10  # Number of test predictions to make
+
+# Optional: Use existing resource IDs to skip creation steps
+# Uncomment and fill in to resume from a specific step
+# existing_ids:
+#   model_id: 1
+#   config_id: 1
+#   deployment_id: 1
+#   result_id: 1
+#   federated_string_id: abc12345
+#   inference_id: 1
+
