@@ -709,6 +709,30 @@ class KafkaMLAutomation:
         # Select random samples
         random_indices = np.random.choice(x_test.shape[0], num_predictions, replace=False)
         actual_labels = []
+
+        logger.info(f"\nCreating Kafka consumer for topic: {inference_cfg['output_topic']}")
+        consumer = KafkaConsumer(
+            inference_cfg['output_topic'],
+            bootstrap_servers=self.kafka_bootstrap,
+            group_id=f"automation_{int(time.time())}",
+            auto_offset_reset='latest',
+            consumer_timeout_ms=90000  # 90 second timeout
+        )
+        
+        # Wait for consumer to be assigned partitions and positioned at latest offset
+        logger.info("Waiting for consumer to be ready...")
+        max_wait = 30  # Maximum 30 seconds to wait
+        wait_start = time.time()
+        
+        while not consumer.assignment():
+            if time.time() - wait_start > max_wait:
+                logger.warning("Consumer partition assignment timeout - proceeding anyway")
+                break
+            consumer.poll(timeout_ms=100)  # Trigger partition assignment
+            time.sleep(0.1)
+        
+        if consumer.assignment():
+            logger.info(f"✓ Consumer ready and assigned to partitions: {consumer.assignment()}")
         
         logger.info(f"\nSending {num_predictions} images for prediction...")
         for idx, i in enumerate(random_indices):
@@ -721,14 +745,6 @@ class KafkaMLAutomation:
         logger.info("✓ All images sent!")
         
         # Create consumer
-        logger.info(f"\nCreating Kafka consumer for topic: {inference_cfg['output_topic']}")
-        consumer = KafkaConsumer(
-            inference_cfg['output_topic'],
-            bootstrap_servers=self.kafka_bootstrap,
-            group_id=f"automation_{int(time.time())}",
-            auto_offset_reset='latest',
-            consumer_timeout_ms=30000  # 30 second timeout
-        )
         
         # Receive predictions
         logger.info("\nReceiving predictions:")
@@ -739,14 +755,12 @@ class KafkaMLAutomation:
             try:
                 # Parse prediction
                 prediction_str = msg.value.decode()
+                prediction_obj = json.loads(prediction_str)
                 
-                try:
-                    prediction_obj = json.loads(prediction_str)
-                    predicted = prediction_obj.get('prediction', prediction_obj)
-                    confidence = prediction_obj.get('confidence', 'N/A')
-                except:
-                    predicted = int(prediction_str)
-                    confidence = 'N/A'
+                # Extract predicted digit as argmax of probability array
+                probs = prediction_obj['values']
+                predicted = int(np.argmax(probs))
+                confidence = float(max(probs))
                 
                 actual = actual_labels[idx]
                 match = predicted == actual
@@ -764,7 +778,7 @@ class KafkaMLAutomation:
                 }
                 predictions.append(prediction_result)
                 
-                logger.info(f"  Prediction {idx + 1}: {predicted} (confidence: {confidence}) | "
+                logger.info(f"  Prediction {idx + 1}: {predicted} (confidence: {confidence:.4f}) | "
                           f"Actual: {actual} {match_symbol}")
                 
                 if idx + 1 >= num_predictions:
