@@ -212,9 +212,18 @@ class MainTraining(object):
             online_train_kafka: online training data and labels from Kafka
         """
         logging.info("Starts receiving online training data from Kafka servers [%s] with topics [%s], group [%s] and stream_timeout [%d]", self.bootstrap_servers, kafka_topic, self.result_id, self.stream_timeout)
+
+        data_topic = kafka_topic
+
+        if ':' in kafka_topic:
+            data_topic = kafka_topic.split(':')[0]
+            if not data_topic:
+                logging.error("Data topic is empty")
+                raise ValueError("Data topic is empty")
+
         
         online_train_data = tfio.experimental.streaming.KafkaBatchIODataset(
-            topics=[kafka_topic],
+            topics=[data_topic],
             group_id=self.result_id,
             servers=self.bootstrap_servers,
             stream_timeout=self.stream_timeout,

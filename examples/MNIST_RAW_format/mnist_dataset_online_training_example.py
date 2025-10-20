@@ -9,8 +9,9 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
-mnist = OnlineRawSink(boostrap_servers='127.0.0.1:9094', topic='automl', deployment_id=1,
-        description='Mnist dataset', validation_rate=0.1)
+mnist = OnlineRawSink(boostrap_servers='localhost:9094', topic='automl', deployment_id=1,
+        description='Mnist dataset', validation_rate=0.1,
+        data_type= "uint8", data_reshape='784', label_type='uint8', label_reshape='')
 
 (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
 print("train: ", (x_train.shape, y_train.shape))
@@ -31,6 +32,8 @@ for (x, y) in zip(x_train_1, y_train_1):
 
 logging.info("Waiting 30 seconds...")
 
+mnist.send_online_control_msg()
+
 sleep(30)
 
 logging.info("Sending second part of the data...")
@@ -40,11 +43,16 @@ for (x, y) in zip(x_train_2, y_train_2):
 
 logging.info("Waiting 30 seconds...")
 
+mnist.send_online_control_msg()
+
+
 sleep(30)
 
 logging.info("Sending third part of the data...")
 
 for (x, y) in zip(x_train_3, y_train_3):
   mnist.send(data=x, label=y)
+
+mnist.send_online_control_msg()
 
 mnist.online_close()

@@ -183,9 +183,14 @@ class KafkaMLSink(object):
     
     def __send_online_control_msg(self):
         """Sends online control message to Apache Kafka with the information"""
+        offset = self.record_metadata[0].offset
+        length = len(self.record_metadata) + offset
+        topic_str = f'{self.topic}:{self.record_metadata[0].partition}:{offset}:{length}'
+        self.total_messages = len(self.record_metadata)
+
 
         dic = {
-            'topic': self.__stringify_partitions(self.topic, self.__partitions) if self.unsupervised_topic is not None else self.topic,
+            'topic': topic_str,
             'unsupervised_topic': self.unsupervised_topic,
             'input_format': self.input_format,
             'description' : self.description,
