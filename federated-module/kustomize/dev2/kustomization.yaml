@@ -1,0 +1,29 @@
+resources:
+  - "../base"
+  - resources/namespace.yaml
+
+namespace: kafkamldevice2
+
+configMapGenerator:
+  - name: federated-kafkaml-configmap
+    behavior: merge
+    literals:
+      - kml.cloud.brokers=kafka.kafkaml:9092
+      - federated.data.brokers=kafka.kafkaml:9092
+      - federated.data.control.topic=FEDERATED_DATA_CONTROL_TOPIC_DEVICE2
+      - federated.model.control.topic=FEDERATED_MODEL_CONTROL_TOPIC
+      - backend.url=http://federated-backend:8085
+      - backend.allowedhosts=127.0.0.1,localhost,federated-backend
+      - federated.tensorflow.training.image=host.docker.internal:50000/federated_model_training_tensorflow:latest
+      - federated.pytorch.training.image=host.docker.internal:50000/federated_model_training_tensorflow:latest
+
+images:
+  - name: federated-kafka-ml-backend
+    newName: host.docker.internal:50000/federated_backend
+    newTag: latest
+  - name: federated-kafka-ml-data_control_logger
+    newName: host.docker.internal:50000/federated_data_control_logger
+    newTag: latest
+  - name: federated-kafka-ml-model_control_logger
+    newName: host.docker.internal:50000/federated_model_control_logger
+    newTag: latest

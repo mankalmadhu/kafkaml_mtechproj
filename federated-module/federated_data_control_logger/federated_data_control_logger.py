@@ -82,7 +82,10 @@ if __name__ == '__main__':
           ok = False
 
           data['input_config'] = json.dumps(data['input_config'])
-          data['time'] = datetime.datetime.utcfromtimestamp(msg.timestamp/1000.0).strftime("%Y-%m-%dT%H:%M:%S%Z")
+          if msg.timestamp is not None:
+              data['time'] = datetime.datetime.utcfromtimestamp(msg.timestamp/1000.0).strftime("%Y-%m-%dT%H:%M:%S%Z")
+          else:
+              data['time'] = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S%Z")
           
           logging.info("Sending datasource to backend [%s]. Data [%s],", url, data)
 

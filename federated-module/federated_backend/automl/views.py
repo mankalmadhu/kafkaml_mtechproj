@@ -151,7 +151,7 @@ def deploy_on_kubernetes(datasource_item, model_item, framework, case):
                             'name': f'federated-training-{federated_model_id}-worker-{federated_client_id}',
                         },
                         'spec': {
-                            'ttlSecondsAfterFinished' : 10,
+                            'ttlSecondsAfterFinished' : 60,
                             'template' : {
                                 'spec': {
                                     'containers': [{

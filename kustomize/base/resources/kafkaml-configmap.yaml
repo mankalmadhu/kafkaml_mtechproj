@@ -28,7 +28,7 @@ data:
 
   # BlockChain-based Federated Learning Configuration
   fedml.blockchain.enable: "1"
-  fedml.blockchain.rpc-url: http://blockchain:8545
+  fedml.blockchain.rpc-url: http://blockchain.kafkaml:8545
   fedml.blockchain.rpc.localhost-url: http://localhost:8545
   fedml.blockchain.chain-id: "31337"
   fedml.blockchain.network-id: "1999"
