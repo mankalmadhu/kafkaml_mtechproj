@@ -16,6 +16,9 @@ configMapGenerator:
       - backend.allowedhosts=127.0.0.1,localhost,federated-backend
       - federated.tensorflow.training.image=host.docker.internal:50000/federated_model_training_tensorflow:latest
       - federated.pytorch.training.image=host.docker.internal:50000/federated_model_training_tensorflow:latest
+      # Device 2 specific blockchain wallet (Hardhat account #2)
+      - fedml.blockchain.wallet-address="0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+      - fedml.blockchain.wallet-key=0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
 
 images:
   - name: federated-kafka-ml-backend

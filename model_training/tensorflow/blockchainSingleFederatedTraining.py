@@ -389,6 +389,7 @@ class BlockchainSingleFederatedTraining(MainTraining):
     def reward_participants(self):
         """Rewards all participants"""      
         participants = list(set(self.contract.functions.getParticipants().call()))
+        logging.info("list of participants: %s", participants)
 
         rewards = {}
 

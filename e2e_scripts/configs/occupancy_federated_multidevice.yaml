@@ -141,9 +141,9 @@ inference:
 
 # Optional: Use existing resource IDs to skip creation steps
 # Uncomment and fill in to resume from a specific step
-# existing_ids:
-#   model_id: 1
-#   config_id: 1
+existing_ids:
+  model_id: 1
+  config_id: 1
 #   deployment_id: 1
 #   result_id: 1
 #   federated_string_id: abc12345

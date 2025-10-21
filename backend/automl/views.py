@@ -546,7 +546,7 @@ class DeploymentList(generics.ListCreateAPIView):
                                             'name': 'model-training-'+str(result.id)
                                         },
                                         'spec': {
-                                            'ttlSecondsAfterFinished' : 30,
+                                            'ttlSecondsAfterFinished' : 60,
                                             'template' : {
                                                 'spec': {
                                                     'containers': [{
@@ -587,7 +587,7 @@ class DeploymentList(generics.ListCreateAPIView):
                                             'name': 'federated-model-training-controller-'+str(result.id)
                                         },
                                         'spec': {
-                                            'ttlSecondsAfterFinished' : 30,
+                                            'ttlSecondsAfterFinished' : 60,
                                             'template' : {
                                                 'spec': {
                                                     'containers': [{
@@ -646,7 +646,7 @@ class DeploymentList(generics.ListCreateAPIView):
                                             'name': 'incremental-model-training-'+str(result.id)
                                         },
                                         'spec': {
-                                            'ttlSecondsAfterFinished' : 30,
+                                            'ttlSecondsAfterFinished' : 60,
                                             'template' : {
                                                 'spec': {
                                                     'containers': [{
@@ -692,7 +692,7 @@ class DeploymentList(generics.ListCreateAPIView):
                                             'name': 'federated-incremental-model-training-controller-'+str(result.id)
                                         },
                                         'spec': {
-                                            'ttlSecondsAfterFinished' : 30,
+                                            'ttlSecondsAfterFinished' : 60,
                                             'template' : {
                                                 'spec': {
                                                     'containers': [{
@@ -764,7 +764,7 @@ class DeploymentList(generics.ListCreateAPIView):
                                             'name': 'distributed-model-training'+n
                                         },
                                         'spec': {
-                                            'ttlSecondsAfterFinished' : 30,
+                                            'ttlSecondsAfterFinished' : 60,
                                             'template' : {
                                                 'spec': {
                                                     'containers': [{
@@ -810,7 +810,7 @@ class DeploymentList(generics.ListCreateAPIView):
                                             'name': 'federated-distributed-model-training-controller'+n
                                         },
                                         'spec': {
-                                            'ttlSecondsAfterFinished' : 30,
+                                            'ttlSecondsAfterFinished' : 60,
                                             'template' : {
                                                 'spec': {
                                                     'containers': [{
@@ -861,7 +861,7 @@ class DeploymentList(generics.ListCreateAPIView):
                                             'name': 'distributed-incremental-model-training'+n
                                         },
                                         'spec': {
-                                            'ttlSecondsAfterFinished' : 30,
+                                            'ttlSecondsAfterFinished' : 60,
                                             'template' : {
                                                 'spec': {
                                                     'containers': [{
@@ -910,7 +910,7 @@ class DeploymentList(generics.ListCreateAPIView):
                                             'name': 'fed-dist-incremental-model-training-controller'+n
                                         },
                                         'spec': {
-                                            'ttlSecondsAfterFinished' : 30,
+                                            'ttlSecondsAfterFinished' : 60,
                                             'template' : {
                                                 'spec': {
                                                     'containers': [{

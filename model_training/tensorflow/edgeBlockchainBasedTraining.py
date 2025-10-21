@@ -124,7 +124,8 @@ def EdgeBlockchainBasedTraining(training):
       last_client_model_topic, metrics, client_account, client_data_size = training.retrieve_last_model_from_queue()
 
 
-      logging.info("Model received from client [%s], data size [%s] at round [%s] with metrics [%s]", client_account, client_data_size, rounds, metrics)
+      # add last_client_model_topic to the logging.info below
+      logging.info("Model received from client [%s], data size [%s] at round [%s] with metrics [%s] and client model topic [%s]", client_account, client_data_size, rounds, metrics, last_client_model_topic)
 
       try:
         control_msg = {
