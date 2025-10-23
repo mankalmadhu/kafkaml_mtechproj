@@ -52,6 +52,19 @@ class MNISTDataset(BaseDataset):
         x_test, y_test = self._test_cache
         return x_test[:num_samples], y_test[:num_samples]
     
+    def load_inference_data(self, num_samples: int) -> Tuple[np.ndarray, np.ndarray]:
+        """Load MNIST test data for inference predictions
+        
+        For MNIST, inference uses the same test data as validation.
+        
+        Args:
+            num_samples: Number of test samples to load
+            
+        Returns:
+            (x_test, y_test) - Test images (28x28) and labels (0-9)
+        """
+        return self.load_test_data(num_samples)
+    
     def parse_prediction(self, prediction_obj: dict) -> Tuple[int, float]:
         """Parse MNIST softmax prediction (10 classes)
         

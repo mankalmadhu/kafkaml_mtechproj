@@ -74,9 +74,10 @@ def create_dataset(dataset_config: Dict[str, Any]):
         return MNISTDataset()
     elif dataset_type == 'occupancy':
         logger.info("Creating Occupancy dataset handler")
-        # Pass data_path if specified in config
+        # Pass data_path and inference_test_file if specified in config
         data_path = dataset_config.get('data_path')
-        return OccupancyDataset(data_path=data_path)
+        inference_test_file = dataset_config.get('inference_test_file')
+        return OccupancyDataset(data_path=data_path, inference_test_file=inference_test_file)
     else:
         raise ValueError(f"Unknown dataset type: {dataset_type}")
 

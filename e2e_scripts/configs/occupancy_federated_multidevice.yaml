@@ -100,7 +100,8 @@ data_injection:
   data_type: float32
   data_reshape: "5"  # 5 features
   label_type: float32
-  label_reshape: "1"  # Single binary label
+  label_reshape: "1" 
+  dynamic_sampling: false 
   
   # Dataset restrictions (binary classification)
   dataset_restrictions:

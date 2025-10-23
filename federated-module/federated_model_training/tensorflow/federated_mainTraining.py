@@ -120,7 +120,7 @@ class MainTraining(object):
         except Exception as e:
             logging.warning(f"Failed to load dynamic sampling configuration: {e}")
             logging.warning("Using default configuration")
-            return False, {}
+            return None
 
     def assign_sample_weight(self, features, label):
         """

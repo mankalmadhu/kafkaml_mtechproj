@@ -21,16 +21,19 @@ class OccupancyDataset(BaseDataset):
     - Features are normalized using StandardScaler
     """
     
-    def __init__(self, data_path: str = None):
+    def __init__(self, data_path: str = None, inference_test_file: str = None):
         """
         Initialize Occupancy dataset handler
         
         Args:
             data_path: Path to occupancy data directory (optional, defaults to datasets/)
+            inference_test_file: Name of test file for inference (optional, defaults to 'datatest2.txt')
         """
         self.data_path = data_path
+        self.inference_test_file = inference_test_file or 'datatest2.txt'
         self._train_cache = None
         self._test_cache = None
+        self._inference_cache = None
         self._scaler = None
     
     def _load_csv_data(self, filepath: str) -> Tuple[np.ndarray, np.ndarray]:
@@ -126,6 +129,39 @@ class OccupancyDataset(BaseDataset):
         x_test, y_test = self._test_cache
         return x_test[:num_samples], y_test[:num_samples]
     
+    def load_inference_data(self, num_samples: int) -> Tuple[np.ndarray, np.ndarray]:
+        """Load occupancy test data for inference predictions
+        
+        Args:
+            num_samples: Number of test samples to load
+            
+        Returns:
+            (x_test, y_test) - Normalized features (N, 5) and labels (N,)
+        """
+        if self._inference_cache is None:
+            # Determine data file path
+            if self.data_path:
+                test_file_path = os.path.join(self.data_path, self.inference_test_file)
+            else:
+                # Default to datasets/ directory
+                datasets_dir = os.path.dirname(os.path.abspath(__file__))
+                test_file_path = os.path.join(datasets_dir, self.inference_test_file)
+            
+            # Load raw data
+            X, y = self._load_csv_data(test_file_path)
+            
+            # Normalize features using the same scaler as training data
+            # If scaler not fitted yet, load training data first
+            if self._scaler is None:
+                self.load_training_data(1)  # Load at least 1 sample to fit scaler
+            
+            X_normalized = self._scaler.transform(X).astype(np.float32)
+            
+            self._inference_cache = (X_normalized, y)
+        
+        x_test, y_test = self._inference_cache
+        return x_test[:num_samples], y_test[:num_samples]
+    
     def parse_prediction(self, prediction_obj: dict) -> Tuple[int, float]:
         """Parse occupancy prediction (binary classification with sigmoid)
         
@@ -152,31 +188,20 @@ class OccupancyDataset(BaseDataset):
         
         return int(predicted), float(confidence)
     
-    def compute_label_weights(self, num_samples: int = None) -> Dict[int, float]:
-        """Compute label weights based on inverse class frequency
-        
-        This method calculates weights to balance class distribution by giving
-        higher weights to minority classes and lower weights to majority classes.
+    def compute_label_weights_from_data(self, y_data: np.ndarray) -> Dict[int, float]:
+        """Compute label weights from provided label data
         
         Args:
-            num_samples: Number of samples to use for weight calculation (None = use all)
+            y_data: Array of labels to compute weights from
             
         Returns:
             Dictionary mapping class labels to their weights
-            e.g., {0: 2.5, 1: 0.8} means class 0 gets 2.5x weight, class 1 gets 0.8x weight
         """
-        # Load training data to compute class frequencies
-        if num_samples is None:
-            # Use all available training data
-            x_train, y_train = self.load_training_data(100000)  # Large number to get all data
-        else:
-            x_train, y_train = self.load_training_data(num_samples)
-        
         # Count class frequencies
-        unique_classes, class_counts = np.unique(y_train, return_counts=True)
+        unique_classes, class_counts = np.unique(y_data, return_counts=True)
         
         # Calculate total samples
-        total_samples = len(y_train)
+        total_samples = len(y_data)
         
         # Compute inverse frequency weights
         # Weight = total_samples / (num_classes * class_count)
@@ -184,28 +209,20 @@ class OccupancyDataset(BaseDataset):
         class_weights = {}
         
         for class_label, class_count in zip(unique_classes, class_counts):
-            # Inverse frequency weight: more samples = lower weight
             weight = total_samples / (num_classes * class_count)
             class_weights[int(class_label)] = float(weight)
         
         return class_weights
     
-    def get_class_distribution(self, num_samples: int = None) -> Dict[int, int]:
-        """Get class distribution for analysis
+    def get_class_distribution_from_data(self, y_data: np.ndarray) -> Dict[int, int]:
+        """Get class distribution from provided label data
         
         Args:
-            num_samples: Number of samples to analyze (None = use all)
+            y_data: Array of labels to analyze
             
         Returns:
             Dictionary mapping class labels to their counts
         """
-        # Load training data
-        if num_samples is None:
-            x_train, y_train = self.load_training_data(100000)  # Large number to get all data
-        else:
-            x_train, y_train = self.load_training_data(num_samples)
-        
-        # Count class frequencies
-        unique_classes, class_counts = np.unique(y_train, return_counts=True)
-        
+        unique_classes, class_counts = np.unique(y_data, return_counts=True)
         return {int(class_label): int(count) for class_label, count in zip(unique_classes, class_counts)}
+    

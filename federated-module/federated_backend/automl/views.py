@@ -24,6 +24,9 @@ from automl.models import Datasource, ModelSource
 
 from confluent_kafka import Producer
 
+# Class-level set to track federated strings that already have jobs launched
+launched_federated_jobs = set()
+
 def is_blank(attribute):
     """Checks if the attribute is an empty string or None.
         Args:
@@ -99,7 +102,16 @@ def check_colission(datasource_item, model_item, case):
 
     # Check federated string ID if datasource has one
     if datasource_item.get('federated_string_id'):
-        return check_federated_string_match(datasource_item, model_item)
+        federated_string_match = check_federated_string_match(datasource_item, model_item)
+        
+        # If federated strings match, check if already launched
+        if federated_string_match:
+            federated_model_id = str(model_item['federated_string_id'])
+            if federated_model_id in launched_federated_jobs:
+                logging.info(f"Federated string '{federated_model_id}' already has jobs launched. Skipping deployment.")
+                return False  # Return False to prevent deployment
+        
+        return federated_string_match
 
     ds_input_config = json.loads(datasource_item['input_config'])
 
@@ -190,6 +202,11 @@ def deploy_on_kubernetes(datasource_item, model_item, framework, case):
 
         logging.debug("Job manifest: %s", job_manifest)
         resp = api_instance.create_namespaced_job(body=job_manifest, namespace=settings.KUBE_NAMESPACE)
+        
+        # Add federated string to launched jobs set on successful deployment
+        launched_federated_jobs.add(federated_model_id)
+        logging.info(f"Added federated string '{federated_model_id}' to launched jobs set")
+        
         return HttpResponse(status=status.HTTP_201_CREATED)
     except Exception as e:
         traceback.print_exc()
