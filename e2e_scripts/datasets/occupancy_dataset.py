@@ -5,7 +5,7 @@ Occupancy dataset handler for KafkaML E2E automation
 import os
 import csv
 import numpy as np
-from typing import Tuple
+from typing import Tuple, Dict
 from sklearn.preprocessing import StandardScaler
 from .base_dataset import BaseDataset
 
@@ -151,3 +151,61 @@ class OccupancyDataset(BaseDataset):
             confidence = 1.0 - prob_occupied
         
         return int(predicted), float(confidence)
+    
+    def compute_label_weights(self, num_samples: int = None) -> Dict[int, float]:
+        """Compute label weights based on inverse class frequency
+        
+        This method calculates weights to balance class distribution by giving
+        higher weights to minority classes and lower weights to majority classes.
+        
+        Args:
+            num_samples: Number of samples to use for weight calculation (None = use all)
+            
+        Returns:
+            Dictionary mapping class labels to their weights
+            e.g., {0: 2.5, 1: 0.8} means class 0 gets 2.5x weight, class 1 gets 0.8x weight
+        """
+        # Load training data to compute class frequencies
+        if num_samples is None:
+            # Use all available training data
+            x_train, y_train = self.load_training_data(100000)  # Large number to get all data
+        else:
+            x_train, y_train = self.load_training_data(num_samples)
+        
+        # Count class frequencies
+        unique_classes, class_counts = np.unique(y_train, return_counts=True)
+        
+        # Calculate total samples
+        total_samples = len(y_train)
+        
+        # Compute inverse frequency weights
+        # Weight = total_samples / (num_classes * class_count)
+        num_classes = len(unique_classes)
+        class_weights = {}
+        
+        for class_label, class_count in zip(unique_classes, class_counts):
+            # Inverse frequency weight: more samples = lower weight
+            weight = total_samples / (num_classes * class_count)
+            class_weights[int(class_label)] = float(weight)
+        
+        return class_weights
+    
+    def get_class_distribution(self, num_samples: int = None) -> Dict[int, int]:
+        """Get class distribution for analysis
+        
+        Args:
+            num_samples: Number of samples to analyze (None = use all)
+            
+        Returns:
+            Dictionary mapping class labels to their counts
+        """
+        # Load training data
+        if num_samples is None:
+            x_train, y_train = self.load_training_data(100000)  # Large number to get all data
+        else:
+            x_train, y_train = self.load_training_data(num_samples)
+        
+        # Count class frequencies
+        unique_classes, class_counts = np.unique(y_train, return_counts=True)
+        
+        return {int(class_label): int(count) for class_label, count in zip(unique_classes, class_counts)}

@@ -11,4 +11,4 @@ class DatasourceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Datasource
         fields = ['incremental', 'topic', 'unsupervised_topic', 'input_format', 'input_config', 'description', 'dataset_restrictions',
-                'validation_rate', 'test_rate', 'total_msg', 'time', 'federated_string_id']
+                'validation_rate', 'test_rate', 'total_msg', 'time', 'federated_string_id', 'label_weights']

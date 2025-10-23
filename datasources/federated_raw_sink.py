@@ -18,6 +18,9 @@ class FederatedRawSink(KafkaMLSink):
             control_topic (str): Control Kafka topic for sending confirmation after sending training data. 
                 Defaults to FEDERATED_DATA_CONTROL_TOPIC
             group_id (str): Group ID of the Kafka consumer. Defaults to sink
+            label_weights (dict): Dictionary mapping class labels to their weights for dynamic sampling.
+                Example: {0: 2.0, 1: 0.5} means class 0 gets 2x weight, class 1 gets 0.5x weight.
+                Defaults to None (no dynamic sampling)
 
         Attributes:
             data_type (str): Datatype of the training data. Examples: uint8, string, bool, ...
@@ -26,12 +29,14 @@ class FederatedRawSink(KafkaMLSink):
                 Defaults '' for no dimension.
             label_reshape (str): Reshape of the label data. Example: '28 28' for a matrix of 28x28. 
                 Defaults '' for no dimension.
+            label_weights (dict): Dictionary mapping class labels to their weights for dynamic sampling.
+                Defaults to None (no dynamic sampling)
 
     """
 
     def __init__(self, boostrap_servers, topic, deployment_id,
         data_type=None, label_type=None, description='', dataset_restrictions='{}', data_reshape=None, label_reshape=None, 
-        validation_rate=0, test_rate=0, control_topic='FEDERATED_DATA_CONTROL_TOPIC', group_id='sink', unsupervised_topic=None, federated_string_id=None):
+        validation_rate=0, test_rate=0, control_topic='FEDERATED_DATA_CONTROL_TOPIC', group_id='sink', unsupervised_topic=None, federated_string_id=None, label_weights=None):
         
         input_format='RAW'
         super().__init__(boostrap_servers, topic, deployment_id, input_format, description,
@@ -41,6 +46,7 @@ class FederatedRawSink(KafkaMLSink):
         self.label_type = label_type
         self.data_reshape = data_reshape
         self.label_reshape = label_reshape
+        self.label_weights = label_weights
         self.input_config =  {
             'data_type' : self.data_type,
             'label_type': self.label_type,

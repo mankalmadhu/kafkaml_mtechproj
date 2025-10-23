@@ -3,7 +3,7 @@ MNIST dataset handler for KafkaML E2E automation
 """
 
 import numpy as np
-from typing import Tuple
+from typing import Tuple, Dict
 from .base_dataset import BaseDataset
 
 
@@ -65,4 +65,41 @@ class MNISTDataset(BaseDataset):
         predicted = int(np.argmax(probs))
         confidence = float(max(probs))
         return predicted, confidence
+    
+    def compute_label_weights(self, num_samples: int = None) -> Dict[int, float]:
+        """Compute label weights based on inverse class frequency (placeholder implementation)
+        
+        TODO: Implement actual weight calculation for MNIST dataset
+        This method should calculate weights to balance class distribution by giving
+        higher weights to minority classes and lower weights to majority classes.
+        
+        Args:
+            num_samples: Number of samples to use for weight calculation (None = use all)
+            
+        Returns:
+            Dictionary mapping class labels to their weights
+            e.g., {0: 1.0, 1: 1.0, ..., 9: 1.0} for balanced MNIST
+        """
+        # Placeholder implementation - return equal weights for all 10 classes
+        # TODO: Implement actual inverse frequency calculation
+        pass
+    
+    def get_class_distribution(self, num_samples: int = None) -> Dict[int, int]:
+        """Get class distribution for analysis (placeholder implementation)
+        
+        TODO: Implement actual class distribution calculation for MNIST dataset
+        
+        Args:
+            num_samples: Number of samples to analyze (None = use all)
+            
+        Returns:
+            Dictionary mapping class labels to their counts
+        """
+        # Placeholder implementation - return equal distribution
+        # TODO: Implement actual class distribution calculation
+        if num_samples is None:
+            num_samples = 60000  # MNIST training set size
+        
+        samples_per_class = num_samples // 10
+        return {i: samples_per_class for i in range(10)}
 

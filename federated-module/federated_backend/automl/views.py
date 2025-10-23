@@ -168,6 +168,8 @@ def deploy_on_kubernetes(datasource_item, model_item, framework, case):
                                                 {'name': 'TOTAL_MSG', 'value': str(datasource_item['total_msg'])},                                                
                                                 {'name': 'FEDERATED_MODEL_ID', 'value': federated_model_id},
                                                 {'name': 'FEDERATED_CLIENT_ID', 'value': federated_client_id},
+                                                {'name': 'DYNAMIC_SAMPLING', 'value': str(datasource_item.get('dynamic_sampling', 'false'))},
+                                                {'name': 'LABEL_WEIGHTS', 'value': json.dumps(datasource_item.get('label_weights', {}))},
                                                 {'name': 'NVIDIA_VISIBLE_DEVICES', 'value': "all"},
                                                 {'name': 'CASE', 'value': str(case)}
                                                 ],

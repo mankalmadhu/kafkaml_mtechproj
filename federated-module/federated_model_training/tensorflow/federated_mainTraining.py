@@ -1,6 +1,7 @@
 from utils import *
 import json
 import time
+import numpy as np
 
 import tensorflow_io as tfio
 import tensorflow_io.kafka as kafka_io
@@ -41,6 +42,15 @@ class MainTraining(object):
         self.validation_rate = float(os.environ.get('VALIDATION_RATE'))
         self.total_msg = -1 if os.environ.get('TOTAL_MSG') == 'None' else int(os.environ.get('TOTAL_MSG'))
 
+        # Load dynamic sampling configuration from data restriction
+        self.dynamic_sampling_weights = self._load_dynamic_sampling_from_data_restriction()
+        
+        if self.dynamic_sampling_weights:
+            logging.info(f"Dynamic sampling ENABLED")
+            logging.info(f"Using class weights: {self.dynamic_sampling_weights}")
+        else:
+            logging.info("Dynamic sampling DISABLED")
+
         logging.info("Received main environment information (KML_CLOUD_BOOTSTRAP_SERVERS, DATA_BOOTSTRAP_SERVERS, FEDERATED_MODEL_ID, DATA_TOPIC, INPUT_FORMAT, INPUT_CONFIG, VALIDATION_RATE, TOTAL_MSG) ([%s], [%s], [%s], [%s], [%s], [%s], [%f], [%d])",
                         self.kml_cloud_bootstrap_server, self.data_bootstrap_server, self.federated_model_id, self.input_data_topic, self.input_format, self.input_config, self.validation_rate, self.total_msg)
 
@@ -75,6 +85,64 @@ class MainTraining(object):
             if self.aggregation_data_topic in topic_metadata.topics: 
                 topic_created = True
 
+    def _load_dynamic_sampling_from_data_restriction(self):
+        """
+        Load dynamic sampling configuration from environment variables
+        Returns: ( class_weights)
+        """
+        try:
+            
+            # Get label weights from environment variable
+            label_weights_str = os.environ.get('LABEL_WEIGHTS', None)
+            if not label_weights_str:
+                return None
+            
+            try:
+                label_weights = json.loads(label_weights_str)
+            except json.JSONDecodeError:
+                logging.warning(f"Failed to parse LABEL_WEIGHTS '{label_weights_str}'")
+                label_weights = {}
+            
+            # Convert string keys to integers if needed
+            class_weights = {}
+            for key, value in label_weights.items():
+                try:
+                    class_weights[int(key)] = float(value)
+                except (ValueError, TypeError):
+                    logging.warning(f"Invalid label weight: {key}={value}")
+            
+            if not class_weights:
+                logging.warning("No valid label weights found, dynamic sampling disabled")
+                return None
+            
+            return class_weights
+            
+        except Exception as e:
+            logging.warning(f"Failed to load dynamic sampling configuration: {e}")
+            logging.warning("Using default configuration")
+            return False, {}
+
+    def assign_sample_weight(self, features, label):
+        """
+        Assign sample weight based on class label
+        """
+        # Convert label to int32 and lookup weight
+        label_int = tf.cast(label, tf.int32)
+        
+        # Handle both scalar and one-hot encoded labels
+        if len(label.shape) > 1 and label.shape[-1] > 1:
+            # One-hot encoded - get the class index
+            label_int = tf.argmax(label_int, axis=-1)
+        
+        # Lookup weight from class_weights dictionary
+        weight = tf.py_function(
+            lambda x: self.dynamic_sampling_weights.get(x.numpy().item(), 1.0),
+            [label_int],
+            tf.float32
+        )
+        
+        return features, label, weight
+
     def get_kafka_dataset(self, training_settings):
         logging.info("Fetching labeled dataset from Kafka Topic [%s], with bootstrap server [%s]", self.input_data_topic, self.data_bootstrap_server)  
 
@@ -96,18 +164,53 @@ class MainTraining(object):
             offset="latest", 
         ).map(lambda message: decoder.decode(message[0], message[1]))
         
-        self.train_dataset = self.kafka_dataset.take(self.training_size).batch(training_settings['batch'])
-        self.validation_dataset = self.kafka_dataset.skip(self.training_size).batch(training_settings['batch'])
-       # lets add some logs to check the shapes and lens of both  
-        # lets add some logs to check the shapes and lens of both  
-        # Get a sample batch to check shapes
-        sample_batch = next(iter(self.train_dataset))
-        logging.info("Training dataset shapes: features=%s, labels=%s", 
-                    sample_batch[0].shape, sample_batch[1].shape)
+        # Apply sample weights if dynamic sampling is enabled
+        if self.dynamic_sampling_weights:
+            logging.info("Applying sample weights to streaming dataset...")
+            
+            # Add sample weights to the dataset
+            self.kafka_dataset = self.kafka_dataset.map(self.assign_sample_weight)
+            
+            logging.info("Sample weights applied to streaming dataset")
+        else:
+            logging.info("Using standard sampling (no sample weights)")
         
-        sample_val_batch = next(iter(self.validation_dataset))
-        logging.info("Validation dataset shapes: features=%s, labels=%s", 
-                    sample_val_batch[0].shape, sample_val_batch[1].shape)
+        # Batch the dataset
+        batched_dataset = self.kafka_dataset.batch(training_settings['batch'])
+        
+        # Split into train/validation sets
+        self.train_dataset = batched_dataset.take(self.training_size)
+        self.validation_dataset = batched_dataset.skip(self.training_size)
+        
+        # Log dataset shapes
+        try:
+            sample_batch = next(iter(self.train_dataset))
+            if len(sample_batch) == 3:  # Has sample weights
+                features, labels, weights = sample_batch
+                logging.info("Training dataset shapes: features=%s, labels=%s, weights=%s", 
+                            features.shape, labels.shape, weights.shape)
+                
+                # Log sample weight distribution
+                weight_values = weights.numpy()
+                logging.info("Sample weight statistics: min=%.3f, max=%.3f, mean=%.3f", 
+                            np.min(weight_values), np.max(weight_values), np.mean(weight_values))
+            else:  # No sample weights
+                features, labels = sample_batch
+                logging.info("Training dataset shapes: features=%s, labels=%s", 
+                            features.shape, labels.shape)
+            
+            sample_val_batch = next(iter(self.validation_dataset))
+            if len(sample_val_batch) == 3:  # Has sample weights
+                val_features, val_labels, val_weights = sample_val_batch
+                logging.info("Validation dataset shapes: features=%s, labels=%s, weights=%s", 
+                            val_features.shape, val_labels.shape, val_weights.shape)
+            else:  # No sample weights
+                val_features, val_labels = sample_val_batch
+                logging.info("Validation dataset shapes: features=%s, labels=%s", 
+                            val_features.shape, val_labels.shape)
+                            
+        except Exception as e:
+            logging.warning("Could not log dataset shapes: %s", str(e))
         
 
         logging.info("Dataset fetched successfully")
