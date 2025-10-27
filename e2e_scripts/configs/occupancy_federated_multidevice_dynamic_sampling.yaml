@@ -120,18 +120,20 @@ data_injection:
     - device_id: device1
       topic: fed_data_topic_device1
       control_topic: FEDERATED_DATA_CONTROL_TOPIC_DEVICE1
-      data_split_ratio: 0.5  # 50% of data
+      data_file: device1_data.txt
       description: Device 1 occupancy dataset for federated training
-      label_weights:  # Device 1 specific weights
+      faulty_device: false
+      label_weights:  # Device 1 specific weights (will be computed dynamically)
         0: 1.0  # Not occupied (minority class) - higher weight
         1: 1.0  # Occupied (majority class) - lower weight
     
     - device_id: device2
       topic: fed_data_topic_device2
       control_topic: FEDERATED_DATA_CONTROL_TOPIC_DEVICE2
-      data_split_ratio: 0.5  # 50% of data
+      data_file: device2_data.txt
       description: Device 2 occupancy dataset for federated training
-      label_weights:  # Device 2 specific weights
+      faulty_device: false
+      label_weights:  # Device 2 specific weights (will be computed dynamically)
         0: 1.0  # Not occupied (minority class) - higher weight
         1: 1.0  # Occupied (majority class) - lower weight
 

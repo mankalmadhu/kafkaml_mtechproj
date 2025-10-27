@@ -69,35 +69,53 @@ class OccupancyDataset(BaseDataset):
         
         return X, y
     
-    def load_training_data(self, num_samples: int) -> Tuple[np.ndarray, np.ndarray]:
+    def load_training_data(self, num_samples: int, filename: str = None) -> Tuple[np.ndarray, np.ndarray]:
         """Load occupancy training data
         
         Args:
-            num_samples: Number of training samples to load
+            num_samples: Number of training samples to load (use -1 or None for all)
+            filename: Optional filename to load from (instead of default datatraining.txt)
             
         Returns:
             (x_train, y_train) - Normalized features (N, 5) and labels (N,)
         """
-        if self._train_cache is None:
-            # Determine data file path
+        # Clear cache if loading from custom file
+        should_use_cache = filename is None
+        
+        if should_use_cache and self._train_cache is not None:
+            x_train, y_train = self._train_cache
+            if num_samples and num_samples > 0:
+                return x_train[:num_samples], y_train[:num_samples]
+            return x_train, y_train
+        
+        # Determine data file path
+        if filename:
+            if self.data_path:
+                train_file = os.path.join(self.data_path, filename)
+            else:
+                datasets_dir = os.path.dirname(os.path.abspath(__file__))
+                train_file = os.path.join(datasets_dir, filename)
+        else:
             if self.data_path:
                 train_file = os.path.join(self.data_path, 'datatraining.txt')
             else:
-                # Default to datasets/ directory
                 datasets_dir = os.path.dirname(os.path.abspath(__file__))
                 train_file = os.path.join(datasets_dir, 'datatraining.txt')
-            
-            # Load raw data
-            X, y = self._load_csv_data(train_file)
-            
-            # Normalize features using StandardScaler
-            self._scaler = StandardScaler()
-            X_normalized = self._scaler.fit_transform(X).astype(np.float32)
-            
+        
+        # Load raw data
+        X, y = self._load_csv_data(train_file)
+        
+        # Normalize features using StandardScaler
+        self._scaler = StandardScaler()
+        X_normalized = self._scaler.fit_transform(X).astype(np.float32)
+        
+        # Cache only if using default file
+        if should_use_cache:
             self._train_cache = (X_normalized, y)
         
-        x_train, y_train = self._train_cache
-        return x_train[:num_samples], y_train[:num_samples]
+        if num_samples and num_samples > 0:
+            return X_normalized[:num_samples], y[:num_samples]
+        return X_normalized, y
     
     def load_test_data(self, num_samples: int) -> Tuple[np.ndarray, np.ndarray]:
         """Load occupancy test data
@@ -132,38 +150,51 @@ class OccupancyDataset(BaseDataset):
         x_test, y_test = self._test_cache
         return x_test[:num_samples], y_test[:num_samples]
     
-    def load_inference_data(self, num_samples: int) -> Tuple[np.ndarray, np.ndarray]:
+    def load_inference_data(self, num_samples: int, filename: str = None) -> Tuple[np.ndarray, np.ndarray]:
         """Load occupancy test data for inference predictions
         
         Args:
             num_samples: Number of test samples to load
+            filename: Optional filename to load from
             
         Returns:
             (x_test, y_test) - Normalized features (N, 5) and labels (N,)
         """
-        if self._inference_cache is None:
-            # Determine data file path
+        should_use_cache = filename is None
+        
+        if should_use_cache and self._inference_cache is not None:
+            x_test, y_test = self._inference_cache
+            return x_test[:num_samples], y_test[:num_samples]
+        
+        # Determine data file path
+        if filename:
+            if self.data_path:
+                test_file_path = os.path.join(self.data_path, filename)
+            else:
+                datasets_dir = os.path.dirname(os.path.abspath(__file__))
+                test_file_path = os.path.join(datasets_dir, filename)
+        else:
             if self.data_path:
                 test_file_path = os.path.join(self.data_path, self.inference_test_file)
             else:
                 # Default to datasets/ directory
                 datasets_dir = os.path.dirname(os.path.abspath(__file__))
                 test_file_path = os.path.join(datasets_dir, self.inference_test_file)
-            
-            # Load raw data
-            X, y = self._load_csv_data(test_file_path)
-            
-            # Normalize features using the same scaler as training data
-            # If scaler not fitted yet, load training data first
-            if self._scaler is None:
-                self.load_training_data(1)  # Load at least 1 sample to fit scaler
-            
-            X_normalized = self._scaler.transform(X).astype(np.float32)
-            
+        
+        # Load raw data
+        X, y = self._load_csv_data(test_file_path)
+        
+        # Normalize features using the same scaler as training data
+        # If scaler not fitted yet, load training data first
+        if self._scaler is None:
+            self.load_training_data(1)  # Load at least 1 sample to fit scaler
+        
+        X_normalized = self._scaler.transform(X).astype(np.float32)
+        
+        if should_use_cache:
             self._inference_cache = (X_normalized, y)
         
-        x_test, y_test = self._inference_cache
-        return x_test[:num_samples], y_test[:num_samples]
+        return X_normalized[:num_samples], y[:num_samples]
     
     def parse_prediction(self, prediction_obj: dict) -> Tuple[int, float]:
         """Parse occupancy prediction (binary classification with sigmoid)
