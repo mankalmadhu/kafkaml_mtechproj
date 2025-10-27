@@ -118,14 +118,14 @@ data_injection:
   # Device-specific configuration
   devices:
     - device_id: device1
-      topic: fed_data_topic_device1
+      topic: fed_data_topic_device11
       control_topic: FEDERATED_DATA_CONTROL_TOPIC_DEVICE1
       data_file: device1_data.txt
       description: Device 1 occupancy dataset for federated training
       faulty_device: false
     
     - device_id: device2
-      topic: fed_data_topic_device2
+      topic: fed_data_topic_device21
       control_topic: FEDERATED_DATA_CONTROL_TOPIC_DEVICE2
       data_file: device2_data.txt
       description: Device 2 occupancy dataset for federated training

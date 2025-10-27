@@ -45,6 +45,7 @@ class Datasource(models.Model):
     description = models.TextField(blank=True)
     dataset_restrictions = models.JSONField(default={}, blank=True, null=True)
     label_weights = models.JSONField(default={}, blank=True, null=True)
+    streaming_data_chunks = models.IntegerField(blank=True, null=True)
 
     time = models.DateTimeField()
 

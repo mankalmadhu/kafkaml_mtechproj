@@ -93,6 +93,7 @@ data_injection:
   bootstrap_servers: localhost:9094
   validation_rate: 0.2  # 20% for validation
   test_rate: 0.0        # 0% for test (use datatest for both validation and inference)
+  streaming_data_chunks: 0  # Enable streaming/incremental training (will be set to deployment.agg_rounds)
   
   # Data format - Occupancy uses float32
   data_type: float32

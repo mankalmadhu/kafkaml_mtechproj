@@ -42,6 +42,14 @@ class MainTraining(object):
 
         self.validation_rate = float(os.environ.get('VALIDATION_RATE'))
         self.total_msg = -1 if os.environ.get('TOTAL_MSG') == 'None' else int(os.environ.get('TOTAL_MSG'))
+        # Read streaming chunks config (-1 = disabled, N = split data into N chunks)
+        try:
+            streaming_chunks_str = os.environ.get('STREAMING_DATA_CHUNKS', None)
+            self.streaming_data_chunks = int(streaming_chunks_str) if streaming_chunks_str else -1
+        except Exception as e:
+            logging.error(f"Error parsing STREAMING_DATA_CHUNKS: {e}")
+            self.streaming_data_chunks = -1
+
 
         # Load dynamic sampling configuration from data restriction
         self.dynamic_sampling_weights = self._load_dynamic_sampling_from_data_restriction()
@@ -51,6 +59,11 @@ class MainTraining(object):
             logging.info(f"Using class weights: {self.dynamic_sampling_weights}")
         else:
             logging.info("Dynamic sampling DISABLED")
+        
+        if self.streaming_data_chunks > 0:
+            logging.info(f"Streaming data mode ENABLED: Data will be split into {self.streaming_data_chunks} chunks for incremental training")
+        else:
+            logging.info("Streaming data mode DISABLED: All data will be used for each round")
 
         logging.info("Received main environment information (KML_CLOUD_BOOTSTRAP_SERVERS, DATA_BOOTSTRAP_SERVERS, FEDERATED_MODEL_ID, DATA_TOPIC, INPUT_FORMAT, INPUT_CONFIG, VALIDATION_RATE, TOTAL_MSG) ([%s], [%s], [%s], [%s], [%s], [%s], [%f], [%d])",
                         self.kml_cloud_bootstrap_server, self.data_bootstrap_server, self.federated_model_id, self.input_data_topic, self.input_format, self.input_config, self.validation_rate, self.total_msg)
@@ -144,12 +157,15 @@ class MainTraining(object):
         
         return features, label, weight
 
-    def get_kafka_dataset(self, training_settings):
+    def get_kafka_dataset(self, training_settings, cur_round=None):
         logging.info("Fetching labeled dataset from Kafka Topic [%s], with bootstrap server [%s]", self.input_data_topic, self.data_bootstrap_server)  
 
         decoder = DecoderFactory.get_decoder(self.input_format, self.input_config)
         
         data_topic = self.input_data_topic
+        begin_offset = None
+        end_offset = None
+        partition = None
 
         if ':' in self.input_data_topic:
             split_topic = self.input_data_topic.split(':')
@@ -161,7 +177,16 @@ class MainTraining(object):
                 partition = int(split_topic[1])
                 begin_offset = int(split_topic[2])
                 end_offset = int(split_topic[3])
+        
+        # Calculate streaming offsets if enabled (cur_round and streaming_data_chunks > 0)
+        # Note: cur_round is 0-indexed (0, 1, 2, ...)
+        if cur_round is not None and self.streaming_data_chunks > 0:
+            chunk_size = self.total_msg // self.streaming_data_chunks
+            begin_offset = cur_round * chunk_size
+            end_offset = (cur_round + 1) * chunk_size if (cur_round + 1) < self.streaming_data_chunks else self.total_msg
             
+            logging.info("Streaming mode: Round %d (0-indexed), loading data from offset %d to %d (chunk size: %d samples)", 
+                        cur_round, begin_offset, end_offset, chunk_size)
         
         # Use the newer tfio.IODataset.from_kafka API instead of deprecated KafkaDataset
         self.kafka_dataset = tfio.IODataset.from_kafka(

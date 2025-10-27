@@ -50,8 +50,10 @@ def blockchainFederatedTraining(training):
 
                     training_settings = model_message["training_settings"]
 
-                    if training.kafka_dataset is None:
-                        training.get_data(training_settings)
+                    # Force reload data with round-specific offsets for streaming data simulation
+                    # This simulates streaming data where different time periods have different data
+                    training.kafka_dataset = None  # Force reload
+                    training.get_data(training_settings)
 
                     logging.info(
                         "Starting training with settings: {}".format(training_settings)

@@ -45,9 +45,10 @@ class BlockchainSingleClassicTraining(MainTraining):
         return self.contract.functions.getCurrentRound().call()
     
     def get_data(self, training_settings):
-        """Gets the data from Kafka"""
+        """Gets the data from Kafka with streaming support"""
 
-        return super().get_kafka_dataset(training_settings)
+        cur_round = self.get_current_round()
+        return super().get_kafka_dataset(training_settings, cur_round=cur_round)
 
     def load_model(self, message):
         """Downloads the model and loads it"""

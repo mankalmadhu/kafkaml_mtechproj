@@ -182,6 +182,7 @@ def deploy_on_kubernetes(datasource_item, model_item, framework, case):
                                                 {'name': 'FEDERATED_CLIENT_ID', 'value': federated_client_id},
                                                 {'name': 'DYNAMIC_SAMPLING', 'value': str(datasource_item.get('dynamic_sampling', 'false'))},
                                                 {'name': 'LABEL_WEIGHTS', 'value': json.dumps(datasource_item.get('label_weights', {}))},
+                                                {'name': 'STREAMING_DATA_CHUNKS', 'value': str(datasource_item.get('streaming_data_chunks', ''))},
                                                 {'name': 'NVIDIA_VISIBLE_DEVICES', 'value': "all"},
                                                 {'name': 'CASE', 'value': str(case)}
                                                 ],
