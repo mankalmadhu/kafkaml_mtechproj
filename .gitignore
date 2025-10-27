@@ -92,6 +92,8 @@ downloads/
 eggs/
 lib/
 lib64/
+# Allow e2e_scripts/lib/ to be tracked
+!e2e_scripts/lib/
 parts/
 sdist/
 var/
