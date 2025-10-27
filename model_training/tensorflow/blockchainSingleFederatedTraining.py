@@ -239,6 +239,7 @@ class BlockchainSingleFederatedTraining(MainTraining):
     ):
         """Saves the model architecture to the blockchain"""
 
+        self.random_sleep()
         nonce = self.web3_connection.eth.getTransactionCount(self.eth_wallet_address)
         tx_hash = self.contract.functions.saveTrainingSettings(
             training_settings, model_architecture, model_compile_args
@@ -255,6 +256,7 @@ class BlockchainSingleFederatedTraining(MainTraining):
     def write_control_message_into_blockchain(self, control_message, n_round):
         """Writes the control message to the blockchain"""
 
+        self.random_sleep()
         nonce = self.web3_connection.eth.getTransactionCount(self.eth_wallet_address)
         tx_hash = self.contract.functions.saveGlobalModel(
             control_message, n_round
@@ -269,6 +271,7 @@ class BlockchainSingleFederatedTraining(MainTraining):
     def save_update_along_with_global_model(self, update_control_msg, global_control_msg):
         """Saves the update along with the global model"""
 
+        self.random_sleep()
         nonce = self.web3_connection.eth.getTransactionCount(self.eth_wallet_address)
         tx_hash = self.contract.functions.saveGlobalModelToUpdate(
             update_control_msg, global_control_msg
