@@ -172,7 +172,7 @@ class KafkaMLSink(object):
             'input_config' : self.input_config,
             'validation_rate' : self.validation_rate,
             'test_rate' : self.test_rate,
-            'total_msg': 100,
+            'total_msg': self.total_messages,
             'incremental': False,
             'federated_string_id': self.federated_string_id,
             'label_weights': self.label_weights

@@ -1,3 +1,4 @@
+import traceback
 from utils import *
 import json
 import time
@@ -151,36 +152,52 @@ class MainTraining(object):
         data_topic = self.input_data_topic
 
         if ':' in self.input_data_topic:
-            data_topic = self.input_data_topic.split(':')[0]
+            split_topic = self.input_data_topic.split(':')
+            data_topic = split_topic[0]
             if not data_topic:
                 logging.error("Data topic is empty")
                 raise ValueError("Data topic is empty")
+            if len(split_topic) > 3:
+                partition = int(split_topic[1])
+                begin_offset = int(split_topic[2])
+                end_offset = int(split_topic[3])
+            
         
         # Use the newer tfio.IODataset.from_kafka API instead of deprecated KafkaDataset
         self.kafka_dataset = tfio.IODataset.from_kafka(
             data_topic, 
             servers=self.data_bootstrap_server, 
             group=self.group_id,
-            offset="latest", 
-        ).map(lambda message: decoder.decode(message[0], message[1]))
+            offset=begin_offset if begin_offset is not None else 0, 
+            stop_offset=end_offset if end_offset is not None else None,
+            partition=partition if partition is not None else 0,
+        )
+
+        logging.info("Training size is: %d", self.training_size)
+        
+        # Split into train/validation sets first (before mapping and batching)
+        train_dataset_raw = self.kafka_dataset.take(self.training_size)
+        validation_dataset_raw = self.kafka_dataset.skip(self.training_size)
+        
+        # Apply decoder mapping to each dataset
+        train_dataset_mapped = train_dataset_raw.map(lambda message: decoder.decode(message[0], message[1]))
+        validation_dataset_mapped = validation_dataset_raw.map(lambda message: decoder.decode(message[0], message[1]))
         
         # Apply sample weights if dynamic sampling is enabled
         if self.dynamic_sampling_weights:
             logging.info("Applying sample weights to streaming dataset...")
             
-            # Add sample weights to the dataset
-            self.kafka_dataset = self.kafka_dataset.map(self.assign_sample_weight)
+            # Add sample weights to each dataset
+            train_dataset_mapped = train_dataset_mapped.map(self.assign_sample_weight)
+            validation_dataset_mapped = validation_dataset_mapped.map(self.assign_sample_weight)
             
             logging.info("Sample weights applied to streaming dataset")
         else:
             logging.info("Using standard sampling (no sample weights)")
         
-        # Batch the dataset
-        batched_dataset = self.kafka_dataset.batch(training_settings['batch'])
-        
-        # Split into train/validation sets
-        self.train_dataset = batched_dataset.take(self.training_size)
-        self.validation_dataset = batched_dataset.skip(self.training_size)
+        # Batch each dataset separately
+        self.train_dataset = train_dataset_mapped.batch(training_settings['batch'])
+        self.validation_dataset = validation_dataset_mapped.batch(training_settings['batch'])
         
         # Log dataset shapes
         try:
@@ -210,6 +227,7 @@ class MainTraining(object):
                             val_features.shape, val_labels.shape)
                             
         except Exception as e:
+            traceback.print_exc()
             logging.warning("Could not log dataset shapes: %s", str(e))
         
 

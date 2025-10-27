@@ -8,7 +8,7 @@ data:
   
   federated.modelloggertopic: FEDERATED_MODEL_CONTROL_TOPIC
 
-  frontend.url: http://localhost
+  frontend.url: http://frontend
   backend.url: http://backend:8000
   backend.address: backend:8000 # TODO replace this
   backend.allowedhosts: 127.0.0.1,localhost,backend
@@ -17,7 +17,7 @@ data:
   tfexecutor.url: http://tfexecutor:8001/
   pthexecutor.url: http://pthexecutor:8002/
 
-  brokers: http://localhost:9092
+  brokers: http://kafka:9092
 
   # tensorflow.training.image: ertis/kafka-ml-tensorflow_model_training:master
   # tensorflow.inference.image: ertis/kafka-ml-tensorflow_model_inference:master

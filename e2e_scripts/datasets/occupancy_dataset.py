@@ -5,9 +5,12 @@ Occupancy dataset handler for KafkaML E2E automation
 import os
 import csv
 import numpy as np
+import logging
 from typing import Tuple, Dict
 from sklearn.preprocessing import StandardScaler
 from .base_dataset import BaseDataset
+
+logger = logging.getLogger(__name__)
 
 
 class OccupancyDataset(BaseDataset):
@@ -30,7 +33,7 @@ class OccupancyDataset(BaseDataset):
             inference_test_file: Name of test file for inference (optional, defaults to 'datatest2.txt')
         """
         self.data_path = data_path
-        self.inference_test_file = inference_test_file or 'datatest2.txt'
+        self.inference_test_file = inference_test_file or 'datatest.txt'
         self._train_cache = None
         self._test_cache = None
         self._inference_cache = None
@@ -108,11 +111,11 @@ class OccupancyDataset(BaseDataset):
         if self._test_cache is None:
             # Determine data file path
             if self.data_path:
-                test_file = os.path.join(self.data_path, 'datatest.txt')
+                test_file = os.path.join(self.data_path, 'datatest2.txt')
             else:
                 # Default to datasets/ directory
                 datasets_dir = os.path.dirname(os.path.abspath(__file__))
-                test_file = os.path.join(datasets_dir, 'datatest.txt')
+                test_file = os.path.join(datasets_dir, 'datatest2.txt')
             
             # Load raw data
             X, y = self._load_csv_data(test_file)
@@ -225,4 +228,45 @@ class OccupancyDataset(BaseDataset):
         """
         unique_classes, class_counts = np.unique(y_data, return_counts=True)
         return {int(class_label): int(count) for class_label, count in zip(unique_classes, class_counts)}
+    
+    def load_faulty_train_dataset(self, num_samples: int = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Load faulty occupancy data from datatraining_faulty.txt and split 80/20 for train/validation
+        
+        Args:
+            num_samples: Optional limit on total samples to load (before splitting)
+            
+        Returns:
+            (x_train, y_train, x_val, y_val) - Training and validation splits (80/20)
+        """
+        # Determine data file path
+        if self.data_path:
+            train_file = os.path.join(self.data_path, 'datatraining_faulty.txt')
+        else:
+            datasets_dir = os.path.dirname(os.path.abspath(__file__))
+            train_file = os.path.join(datasets_dir, 'datatraining_faulty.txt')
+        
+        # Check if dataset exists
+        if not os.path.exists(train_file):
+            logger.error(f"Faulty training dataset not found: {train_file}")
+            raise FileNotFoundError(f"Dataset not found: {train_file}")
+        
+        # Load raw data
+        X, y = self._load_csv_data(train_file)
+        
+        # Limit samples if specified
+        if num_samples is not None:
+            X, y = X[:num_samples], y[:num_samples]
+        
+        # Normalize features
+        self._scaler = StandardScaler()
+        X_normalized = self._scaler.fit_transform(X).astype(np.float32)
+        
+        # Split into 80% training, 20% validation
+        split_idx = int(len(X_normalized) * 0.8)
+        x_train, y_train = X_normalized[:split_idx], y[:split_idx]
+        x_val, y_val = X_normalized[split_idx:], y[split_idx:]
+        
+        logger.info(f"Loaded {len(x_train)} training samples and {len(x_val)} validation samples")
+        
+        return x_train, y_train, x_val, y_val
     

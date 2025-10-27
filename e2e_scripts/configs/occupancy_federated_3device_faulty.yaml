@@ -1,0 +1,158 @@
+# KafkaML Occupancy Federated Learning Configuration - 3-Device Setup with Faulty Device
+# Binary classification for occupancy detection with one faulty device
+
+# Dataset configuration
+dataset:
+  type: occupancy  # Dataset type
+  train_samples: 5000  # Use all available training samples
+  test_samples: 1000   # Use all available test samples
+  # data_path: /custom/path  # Optional: Override default (datasets/ directory)
+
+# Backend API configuration
+backend:
+  url: http://localhost:9090
+
+# Kafka configuration
+kafka:
+  bootstrap_servers: localhost:9094
+
+# Model configuration
+model:
+  name: occupancy_federated_3device_faulty_model
+  description: Occupancy detection federated learning model with 3 devices including one faulty device
+  framework: tf  # TensorFlow
+  distributed: false
+  
+  # Python imports required for model
+  imports: |
+    import tensorflow as tf
+  
+  # Model architecture code - Binary classification
+  code: |
+    model = tf.keras.Sequential([
+        # Input layer: 5 features
+        tf.keras.layers.Dense(64, activation='relu', input_shape=(5,), name='dense_1'),
+        tf.keras.layers.Dropout(0.2, name='dropout_1'),
+        
+        # Hidden layers
+        tf.keras.layers.Dense(32, activation='relu', name='dense_2'),
+        tf.keras.layers.Dropout(0.2, name='dropout_2'),
+        
+        tf.keras.layers.Dense(16, activation='relu', name='dense_3'),
+        
+        # Output layer: Binary classification
+        tf.keras.layers.Dense(1, activation='sigmoid', name='output')
+    ])
+    
+    # Compile the model
+    model.compile(
+        optimizer='adam',
+        loss='binary_crossentropy',
+       
+        weighted_metrics=[
+            'binary_accuracy',
+        ]
+    )
+
+# Configuration (association of models)
+configuration:
+  name: occupancy_fed_3device_faulty_config
+  description: Configuration for Occupancy federated training with 3 devices including faulty device
+
+# Deployment configuration
+deployment:
+  batch: 32
+  epochs: 5  # Epochs per aggregation round
+  optimizer: adam
+  learning_rate: 0.001
+  loss: binary_crossentropy
+  metrics: binary_accuracy
+  
+  # Federated learning settings
+  federated: true
+  blockchain: true  # Enable blockchain logging
+  agg_rounds: 5    # Number of aggregation rounds
+  min_data: 100    # Minimum data samples required
+  agg_strategy: FedAvg  # Aggregation strategy
+  
+  # Data restriction (binary classification)
+  data_restriction:
+    features:
+      label:
+        num_classes: 2
+        names:
+          - "not_occupied"
+          - "occupied"
+    supervised_keys:
+      input: features
+      output: label
+
+# 3-Device data injection configuration with faulty device
+data_injection:
+  # Common configuration (same for all devices)
+  bootstrap_servers: localhost:9094
+  validation_rate: 0.2  # 20% for validation
+  test_rate: 0.0        # 0% for test (use datatest for both validation and inference)
+  
+  # Data format - Occupancy uses float32
+  data_type: float32
+  data_reshape: "5"  # 5 features
+  label_type: float32
+  label_reshape: "1" 
+  dynamic_sampling: false  # Enable dynamic sampling for better fault tolerance
+  
+  # Dataset restrictions (binary classification)
+  dataset_restrictions:
+    features:
+      label:
+        num_classes: 2
+        names:
+          - "not_occupied"
+          - "occupied"
+    supervised_keys:
+      input: features
+      output: label
+  
+  # Device-specific configuration
+  devices:
+    - device_id: device1
+      topic: fed_data_topic_device1
+      control_topic: FEDERATED_DATA_CONTROL_TOPIC_DEVICE1
+      data_split_ratio: 0.5  # 50% of normal data
+      description: Device 1 occupancy dataset for federated training
+      faulty_device: false
+    
+    - device_id: device2
+      topic: fed_data_topic_device2
+      control_topic: FEDERATED_DATA_CONTROL_TOPIC_DEVICE2
+      data_split_ratio: 0.5  # 50% of normal data
+      description: Device 2 occupancy dataset for federated training
+      faulty_device: false
+    
+    - device_id: device3
+      topic: fed_data_topic_device3
+      control_topic: FEDERATED_DATA_CONTROL_TOPIC_DEVICE3
+      data_split_ratio: 0.0  # Not used for faulty device
+      description: Device 3 occupancy dataset for federated training (FAULTY DEVICE)
+      faulty_device: true  # This device will use corrupted data
+
+# Inference configuration
+inference:
+  replicas: 1
+  input_format: RAW
+  input_config:
+    data_type: float32
+    data_reshape: "5"
+  input_topic: occupancy_in
+  output_topic: occupancy_out
+  num_predictions: 20  # More predictions for binary classification
+
+# Optional: Use existing resource IDs to skip creation steps
+# Uncomment and fill in to resume from a specific step
+existing_ids:
+  model_id: 1
+  config_id: 1
+#   deployment_id: 1
+#   result_id: 1
+#   federated_string_id: abc12345
+#   inference_id: 1
