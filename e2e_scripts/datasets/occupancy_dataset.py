@@ -260,7 +260,7 @@ class OccupancyDataset(BaseDataset):
         unique_classes, class_counts = np.unique(y_data, return_counts=True)
         return {int(class_label): int(count) for class_label, count in zip(unique_classes, class_counts)}
     
-    def load_faulty_train_dataset(self, num_samples: int = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def load_faulty_train_dataset(self, num_samples: int = None, filename: str = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Load faulty occupancy data from datatraining_faulty.txt and split 80/20 for train/validation
         
         Args:
@@ -269,13 +269,11 @@ class OccupancyDataset(BaseDataset):
         Returns:
             (x_train, y_train, x_val, y_val) - Training and validation splits (80/20)
         """
-        # Determine data file path
-        if self.data_path:
-            train_file = os.path.join(self.data_path, 'datatraining_faulty.txt')
+        if filename:          
+            train_file = os.path.join(self.data_path, filename)
         else:
-            datasets_dir = os.path.dirname(os.path.abspath(__file__))
-            train_file = os.path.join(datasets_dir, 'datatraining_faulty.txt')
-        
+            train_file = os.path.join(self.data_path, 'datatraining_faulty.txt')
+            
         # Check if dataset exists
         if not os.path.exists(train_file):
             logger.error(f"Faulty training dataset not found: {train_file}")

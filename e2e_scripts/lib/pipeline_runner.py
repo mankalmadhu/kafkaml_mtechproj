@@ -236,7 +236,11 @@ class PipelineRunner:
             # Load data from the specified file - backend will handle train/validation split
             if data_file:
                 logger.info(f"  Loading data from file: {data_file}")
-                x_data, y_data = self.dataset.load_training_data(-1, filename=data_file)
+                # fetch data for faulty device if device is coinfigured as faulty
+                if device_cfg.get('faulty_device', False):
+                    x_data, y_data = self.dataset.load_faulty_train_dataset(3000, filename=data_file)
+                else:
+                    x_data, y_data = self.dataset.load_training_data(3000, filename=data_file)
                 logger.info(f"  Loaded {len(x_data)} samples from {data_file}")
             else:
                 # Fallback to old method if no data_file specified

@@ -61,4 +61,6 @@ WORKDIR /usr/src/app
 # Upgrade pip
 RUN pip install --upgrade pip
 
+RUN pip install tensorflow==2.12.0 tensorflow-io==0.32.0
+
 

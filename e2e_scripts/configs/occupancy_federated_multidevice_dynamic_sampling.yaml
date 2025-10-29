@@ -71,7 +71,7 @@ deployment:
   # Federated learning settings
   federated: true
   blockchain: true  # Enable blockchain logging
-  agg_rounds: 5    # Number of aggregation rounds
+  agg_rounds: 3    # Number of aggregation rounds
   min_data: 100    # Minimum data samples required
   agg_strategy: FedAvg  # Aggregation strategy
   

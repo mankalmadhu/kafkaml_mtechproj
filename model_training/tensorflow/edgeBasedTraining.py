@@ -80,9 +80,6 @@ def EdgeBasedTraining(training):
     version, rounds, model_metrics, start_time = 0, 0, [], time.time()
     """Initializes the version, rounds, model metrics and start time"""
 
-    # Trigger federated training job
-    trigger_federated_training_job(training)
-    logging.info("Federated training job triggered")
 
     sink = FederatedKafkaMLModelSink(bootstrap_servers=training.bootstrap_servers, topic=training.model_data_topic, control_topic=training.model_control_topic, federated_id=training.result_id, training_settings=training_settings)
     

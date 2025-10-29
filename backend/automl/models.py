@@ -62,7 +62,7 @@ class Deployment(models.Model):
     federated = models.BooleanField(default=False)
     agg_rounds = models.IntegerField(default=15, blank=True, null=True)
     min_data = models.IntegerField(default=1000, blank=True, null=True)
-    AGGREGATION_STRATEGIES = Choices('FedAvg', 'FedOpt', 'FedAdagrad', 'FedAdam', 'FedYogi')
+    AGGREGATION_STRATEGIES = Choices('FedAvg', 'FedAvg+', 'FedOpt', 'FedAdagrad', 'FedAdam', 'FedYogi', 'Krum')
     agg_strategy = StatusField(choices_name='AGGREGATION_STRATEGIES')
     data_restriction = models.JSONField(default=dict, blank=True, null=True)
 
