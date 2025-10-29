@@ -179,13 +179,14 @@ class KafkaMLClient:
         
         raise ValueError(f"Could not find created configuration with name: {unique_name}")
     
-    def create_deployment(self, deploy_cfg: Dict[str, Any], config_id: int) -> Tuple[int, Optional[str], int]:
+    def create_deployment(self, deploy_cfg: Dict[str, Any], config_id: int, registered_devices: int = -1) -> Tuple[int, Optional[str], int]:
         """
         Create a deployment
         
         Args:
             deploy_cfg: Deployment configuration from YAML
             config_id: ID of the configuration to deploy
+            registered_devices: Number of registered devices (default: -1 for disabled)
             
         Returns:
             (deployment_id, federated_string_id, result_id)
@@ -211,6 +212,7 @@ class KafkaMLClient:
             "min_data": deploy_cfg.get('min_data', 100),
             "agg_strategy": deploy_cfg.get('agg_strategy', 'FedAvg'),
             "data_restriction": deploy_cfg.get('data_restriction', {}),
+            "registered_devices": registered_devices,
             "gpumem": 0,
             "tf_kwargs_fit": tf_kwargs_fit,
             "tf_kwargs_val": "verbose=1",
@@ -222,6 +224,7 @@ class KafkaMLClient:
         logger.info(f"  Federated: {deploy_cfg.get('federated', False)}")
         logger.info(f"  Blockchain: {deploy_cfg.get('blockchain', False)}")
         logger.info(f"  Aggregation rounds: {deploy_cfg.get('agg_rounds', 5)}")
+        logger.info(f"  Registered devices: {registered_devices}")
         
         response = self._make_request('POST', '/deployments/', payload)
         logger.info(f"✓ Deployment created successfully (Status: {response.status_code})")

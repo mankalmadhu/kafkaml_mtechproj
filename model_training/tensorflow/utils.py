@@ -225,7 +225,7 @@ def load_incremental_environment_vars():
 
 def load_federated_environment_vars():
     """Loads the federated environment information received from dockers
-    model_logger_topic, federated_string_id, agg_rounds, data_restriction, min_data, agg_strategy
+    model_logger_topic, federated_string_id, agg_rounds, data_restriction, min_data, agg_strategy, registered_devices
     Returns:
         model_logger_topic (str): model control topic with the model information
         federated_string_id (str): federated string id
@@ -233,6 +233,7 @@ def load_federated_environment_vars():
         data_restriction (str): data restriction
         min_data (int): minimum data to train
         agg_strategy (str): aggregation strategy
+        registered_devices (int): number of registered devices (-1 if disabled)
     """
 
     model_logger_topic = os.environ.get("MODEL_LOGGER_TOPIC")
@@ -241,6 +242,14 @@ def load_federated_environment_vars():
     data_restriction = os.environ.get("DATA_RESTRICTION")
     min_data = int(os.environ.get("MIN_DATA"))
     agg_strategy = os.environ.get("AGG_STRATEGY")
+    
+    # Load registered_devices with error handling, default to -1 (disabled)
+    registered_devices_str = os.environ.get("REGISTERED_DEVICES", "-1")
+    try:
+        registered_devices = int(registered_devices_str)
+    except (ValueError, TypeError):
+        registered_devices = -1  # Default to disabled
+        logging.warning("Invalid REGISTERED_DEVICES value: %s, defaulting to -1", registered_devices_str)
 
     return (
         model_logger_topic,
@@ -249,6 +258,7 @@ def load_federated_environment_vars():
         data_restriction,
         min_data,
         agg_strategy,
+        registered_devices,
     )
 
 

@@ -61,16 +61,18 @@ class BlockchainSingleFederatedTraining(MainTraining):
             self.data_restriction,
             self.min_data,
             self.agg_strategy,
+            self.registered_devices,
         ) = load_federated_environment_vars()
 
         logging.info(
-            "Received federated environment information (model_logger_topic, federated_string_id, agg_rounds, data_restriction, min_data, agg_strategy) ([%s], [%s], [%d], [%s], [%d], [%s])",
+            "Received federated environment information (model_logger_topic, federated_string_id, agg_rounds, data_restriction, min_data, agg_strategy, registered_devices) ([%s], [%s], [%d], [%s], [%d], [%s], [%d])",
             self.model_logger_topic,
             self.federated_string_id,
             self.agg_rounds,
             self.data_restriction,
             self.min_data,
             self.agg_strategy,
+            self.registered_devices,
         )
 
         (

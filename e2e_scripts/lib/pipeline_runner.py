@@ -626,8 +626,21 @@ class PipelineRunner:
             
             # Step 3: Create deployment
             if 'deployment' not in skip_steps:
+                # Calculate registered devices count if key is present in deployment config
+                # Any presence (regardless of value, including 0/False) enables dynamic counting
+                registered_devices = -1  # Default: disabled
+                if 'registered_devices' in self.config['deployment']:
+                    # Count devices from data_injection.devices
+                    data_injection = self.config.get('data_injection', {})
+                    devices = data_injection.get('devices', [])
+                    if isinstance(devices, list) and len(devices) > 0:
+                        registered_devices = len(devices)
+                        logger.info(f"Calculated registered_devices count: {registered_devices} from data_injection.devices")
+                    else:
+                        logger.warning("registered_devices enabled but no devices found in data_injection.devices, using default -1")
+                
                 deployment_id, federated_string_id, result_id = self.client.create_deployment(
-                    self.config['deployment'], config_id
+                    self.config['deployment'], config_id, registered_devices=registered_devices
                 )
                 self.results['deployment_id'] = deployment_id
                 self.results['federated_string_id'] = federated_string_id

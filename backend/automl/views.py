@@ -612,7 +612,8 @@ class DeploymentList(generics.ListCreateAPIView):
                                                                 {'name': 'AGG_STRATEGY', 'value': str(deployment.agg_strategy)},
                                                                 {'name': 'DATA_RESTRICTION', 'value': str(deployment.data_restriction)},                            
                                                                 {'name': 'MODEL_LOGGER_TOPIC', 'value': str(settings.MODEL_LOGGER_TOPIC)},
-                                                                {'name': 'FEDERATED_STRING_ID', 'value': str(federated_string_id)}
+                                                                {'name': 'FEDERATED_STRING_ID', 'value': str(federated_string_id)},
+                                                                {'name': 'REGISTERED_DEVICES', 'value': str(deployment.registered_devices)}
                                                                 ],
                                                     }],
                                                     'imagePullPolicy': 'Always',
@@ -723,7 +724,8 @@ class DeploymentList(generics.ListCreateAPIView):
                                                                 {'name': 'AGG_STRATEGY', 'value': str(deployment.agg_strategy)},
                                                                 {'name': 'DATA_RESTRICTION', 'value': str(deployment.data_restriction)},                           
                                                                 {'name': 'MODEL_LOGGER_TOPIC', 'value': str(settings.MODEL_LOGGER_TOPIC)},
-                                                                {'name': 'FEDERATED_STRING_ID', 'value': str(federated_string_id)}
+                                                                {'name': 'FEDERATED_STRING_ID', 'value': str(federated_string_id)},
+                                                                {'name': 'REGISTERED_DEVICES', 'value': str(deployment.registered_devices)}
                                                                 ],
                                                     }],
                                                     'imagePullPolicy': 'Always',
@@ -841,7 +843,8 @@ class DeploymentList(generics.ListCreateAPIView):
                                                                 {'name': 'AGG_STRATEGY', 'value': str(deployment.agg_strategy)},
                                                                 {'name': 'DATA_RESTRICTION', 'value': str(deployment.data_restriction)},                           
                                                                 {'name': 'MODEL_LOGGER_TOPIC', 'value': str(settings.MODEL_LOGGER_TOPIC)},
-                                                                {'name': 'FEDERATED_STRING_ID', 'value': str(federated_string_id)}
+                                                                {'name': 'FEDERATED_STRING_ID', 'value': str(federated_string_id)},
+                                                                {'name': 'REGISTERED_DEVICES', 'value': str(deployment.registered_devices)}
                                                                 ],
                                                     }],
                                                     'imagePullPolicy': 'Always',
@@ -944,7 +947,8 @@ class DeploymentList(generics.ListCreateAPIView):
                                                                 {'name': 'AGG_STRATEGY', 'value': str(deployment.agg_strategy)},
                                                                 {'name': 'DATA_RESTRICTION', 'value': str(deployment.data_restriction)},                           
                                                                 {'name': 'MODEL_LOGGER_TOPIC', 'value': str(settings.MODEL_LOGGER_TOPIC)},
-                                                                {'name': 'FEDERATED_STRING_ID', 'value': str(federated_string_id)}
+                                                                {'name': 'FEDERATED_STRING_ID', 'value': str(federated_string_id)},
+                                                                {'name': 'REGISTERED_DEVICES', 'value': str(deployment.registered_devices)}
                                                                 ],
                                                     }],
                                                     'imagePullPolicy': 'Always',

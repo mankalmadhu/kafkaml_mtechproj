@@ -76,6 +76,7 @@ deployment:
   agg_rounds: 3    # Number of aggregation rounds
   min_data: 100    # Minimum data samples required
   agg_strategy: FedAvg+  # Aggregation strategy
+  registered_devices: 0
   
   # Data restriction (binary classification)
   data_restriction:

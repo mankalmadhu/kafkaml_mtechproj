@@ -102,7 +102,7 @@ class DeployDeploymentSerializer(serializers.ModelSerializer):
                 'incremental', 'indefinite', 'stream_timeout', 'monitoring_metric', 'change', 'improvement']+[
                 'unsupervised', 'unsupervised_rounds', 'confidence']+[
                 'batch', 'tf_kwargs_fit', 'tf_kwargs_val', 'pth_kwargs_fit', 'pth_kwargs_val', 'conf_mat_settings', 'configuration']+[
-                'federated', 'agg_rounds', 'min_data', 'agg_strategy', 'data_restriction']+['blockchain', 'federated_string_id']
+                'federated', 'agg_rounds', 'min_data', 'agg_strategy', 'data_restriction']+['blockchain', 'federated_string_id', 'registered_devices']
     
     def validate_batch(self, value):
         """Checks that batch size is greater than 0"""

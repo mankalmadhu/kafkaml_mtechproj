@@ -192,16 +192,20 @@ def EdgeBlockchainBasedTraining(training):
         training.calculate_reward(rounds, control_msg, clients_contributions)
 
         
-        if len(client_trained_models) == 1:
-          while training.elements_to_aggregate() < 1:
-            logging.info("Waiting for more client models to aggregate for round %s", rounds)
-            time.sleep(1)
+        # Enhanced wait condition: check registered_devices count if enabled
+        if training.registered_devices != -1 and len(client_trained_models) < training.registered_devices:
+            while training.elements_to_aggregate() < 1:
+              logging.info("Waiting for more client models to aggregate for round %s", rounds)
+              time.sleep(1)
             
-          logging.info("Only 1 model collected for round %s. Queue now has %d items. Continuing to process next device. client_trained_models: %d models", rounds, training.elements_to_aggregate(), len(client_trained_models))
-          isNextAggRound = False
-          continue
+            logging.info("Queue has %d items. Continuing to process. client_trained_models: %d/%d models", 
+                        training.elements_to_aggregate(), len(client_trained_models), training.registered_devices)
+            isNextAggRound = False
+            continue
 
-        logging.info("No more devices in queue. About to aggregate with client_trained_models containing %d models", len(client_trained_models))
+ 
+        logging.info("Proceeding to aggregate. client_trained_models containing %d models (registered_devices: %d, queue items: %d)", 
+                    len(client_trained_models), training.registered_devices, training.elements_to_aggregate())
         if training.agg_strategy != 'FedAvg':
           training.model = aggregate_client_trained_models(training.model, client_trained_models, training.agg_strategy, control_msg)
         
@@ -209,8 +213,6 @@ def EdgeBlockchainBasedTraining(training):
         isNextAggRound = True
         client_trained_models = []
         logging.info("Aggregation completed. New model version: {}".format(rounds))
-
-
 
       except Exception as e:
         traceback.print_exc()

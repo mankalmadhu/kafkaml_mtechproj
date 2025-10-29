@@ -69,6 +69,7 @@ class Deployment(models.Model):
     # Federated Blockchain Deployment Settings
     blockchain = models.BooleanField(default=False)
     federated_string_id = models.CharField(max_length=8, blank=True, null=True)
+    registered_devices = models.IntegerField(default=-1, blank=True, null=True)
 
 
     class Meta(object):
