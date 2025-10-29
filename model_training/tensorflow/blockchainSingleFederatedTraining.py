@@ -398,6 +398,13 @@ class BlockchainSingleFederatedTraining(MainTraining):
 
         rewards = {}
 
+        # Query token decimals to log human-readable values
+        try:
+            token_decimals = self.token_contract.functions.decimals().call()
+        except Exception:
+            token_decimals = 18
+        unit_scale = 10 ** token_decimals
+
         for participant in participants:
             # get how much reward the participant has
             # TODO: Definir esta funcion en el Smart contract. 
@@ -410,7 +417,11 @@ class BlockchainSingleFederatedTraining(MainTraining):
         wallet_balance = self.token_contract.functions.balanceOf(self.eth_wallet_address).call()
 
         if wallet_balance < total_reward:
-            logging.error("Not enough tokens in wallet to reward participants, weighted reward will be applied")
+            logging.error(
+                "Not enough tokens in wallet to reward participants (wallet: %.6f, needed: %.6f). Applying weighted distribution",
+                wallet_balance / unit_scale,
+                total_reward / unit_scale,
+            )
             total_reward = wallet_balance
             for participant in participants:
                 rewards[participant] = rewards[participant] * total_reward / sum(rewards.values())
@@ -424,10 +435,20 @@ class BlockchainSingleFederatedTraining(MainTraining):
                 {"from": self.eth_wallet_address, "nonce": nonce}
             )
 
-            logging.info("Sent reward [%s] to participant [%s], tx hash [%s]", reward, participant, tx_hash.hex())
+            logging.info(
+                "Sent reward [%.6f tokens | %s raw] to participant [%s], tx hash [%s]",
+                reward / unit_scale,
+                reward,
+                participant,
+                tx_hash.hex(),
+            )
 
             # Sleep to avoid spamming the blockchain and causing errors
             time.sleep(1)
 
-        logging.info("Rewarded all participants")
+        logging.info(
+            "Rewarded all participants (total distributed: %.6f tokens | %s raw)",
+            sum(rewards.values()) / unit_scale,
+            sum(rewards.values()),
+        )
 
