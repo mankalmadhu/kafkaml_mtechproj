@@ -72,7 +72,7 @@ deployment:
   
   # Federated learning settings
   federated: true
-  blockchain: true  # Enable blockchain logging
+  blockchain: false  # Enable blockchain logging
   agg_rounds: 5    # Number of aggregation rounds
   min_data: 100    # Minimum data samples required
   agg_strategy: FedAvg  # Aggregation strategy
@@ -96,7 +96,7 @@ data_injection:
   description: Occupancy dataset for federated training
   validation_rate: 0.2  # 20% for validation
   test_rate: 0.0        # 0% for test
-  control_topic: FEDERATED_DATA_CONTROL_TOPIC
+  control_topic: FEDERATED_DATA_CONTROL_TOPIC_DEVICE1
   
   # Data format - Occupancy uses float32
   data_type: float32

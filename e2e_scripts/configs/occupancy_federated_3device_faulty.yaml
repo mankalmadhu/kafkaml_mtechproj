@@ -50,7 +50,7 @@ model:
         loss='binary_crossentropy',
        
         weighted_metrics=[
-            'binary_accuracy',
+            'binary_accuracy'
         ]
     )
 
@@ -74,6 +74,7 @@ deployment:
   agg_rounds: 5    # Number of aggregation rounds
   min_data: 100    # Minimum data samples required
   agg_strategy: FedAvg  # Aggregation strategy
+  registered_devices: 0
   
   # Data restriction (binary classification)
   data_restriction:
