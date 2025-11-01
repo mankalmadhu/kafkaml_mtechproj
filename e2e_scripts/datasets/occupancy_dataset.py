@@ -290,12 +290,6 @@ class OccupancyDataset(BaseDataset):
         self._scaler = StandardScaler()
         X_normalized = self._scaler.fit_transform(X).astype(np.float32)
         
-        # Split into 80% training, 20% validation
-        split_idx = int(len(X_normalized) * 0.8)
-        x_train, y_train = X_normalized[:split_idx], y[:split_idx]
-        x_val, y_val = X_normalized[split_idx:], y[split_idx:]
         
-        logger.info(f"Loaded {len(x_train)} training samples and {len(x_val)} validation samples")
-        
-        return x_train, y_train, x_val, y_val
+        return X_normalized, y
     

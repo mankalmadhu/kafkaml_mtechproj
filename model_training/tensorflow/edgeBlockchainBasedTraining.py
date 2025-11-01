@@ -85,6 +85,38 @@ def aggregate_client_trained_models(global_model, client_trained_models, aggrega
   return global_model
 
 
+def _extract_metric(metrics, section, keys):
+  section_data = metrics.get(section, {}) if isinstance(metrics, dict) else {}
+  for key in keys:
+    if not isinstance(section_data, dict):
+      continue
+    values = section_data.get(key)
+    if isinstance(values, list) and values:
+      return values[-1]
+    if values is not None and not isinstance(values, list):
+      return values
+  return None
+
+
+def _round_float(value, ndigits=4):
+  if value is None:
+    return None
+  if isinstance(value, bool):
+    return value
+  try:
+    float_value = float(value)
+  except (TypeError, ValueError):
+    return value
+  return round(float_value, ndigits)
+
+
+def _safe_int(value):
+  try:
+    return int(value)
+  except (TypeError, ValueError):
+    return value
+
+
 def EdgeBlockchainBasedTraining(training):
     training.get_models()
     """Downloads the models from the URLs received, saves and loads them from the filesystem to Tensorflow models"""
@@ -127,6 +159,7 @@ def EdgeBlockchainBasedTraining(training):
     last_client_model_topic = None
     clients_contributions = dict()
     client_trained_models = []
+    aggration_round_metrics = []
     """Initializes the version, rounds, model metrics and start time"""
 
     sink = FederatedKafkaMLModelSink(bootstrap_servers=training.bootstrap_servers, topic=training.model_data_topic, control_topic=training.model_control_topic, federated_id=training.result_id, training_settings=training_settings)
@@ -178,9 +211,9 @@ def EdgeBlockchainBasedTraining(training):
         
         if training.agg_strategy == 'FedAvg':
           training.model = aggregate_model(training.model, trained_model, training.agg_strategy, control_msg)
-        else:
-          client_trained_models.append(trained_model)
-          logging.info("Added device model to client_trained_models. Now contains %d models for round %d", len(client_trained_models), rounds)
+        
+        client_trained_models.append(trained_model)
+        logging.info("Added device model to client_trained_models. Now contains %d models for round %d", len(client_trained_models), rounds)
         
         model_metrics.append(metrics)
  
@@ -189,7 +222,20 @@ def EdgeBlockchainBasedTraining(training):
         """ Sends the current metrics to the backend"""
 
         clients_contributions[client_account] = client_data_size
-        training.calculate_reward(rounds, control_msg, clients_contributions)
+        reward = training.calculate_reward(rounds, control_msg, clients_contributions)
+
+        aggration_round_metric = {
+          'round': rounds,
+          'topic': last_client_model_topic,
+          'account': client_account,
+          'num_samples': _safe_int(client_data_size),
+          'train_loss': _round_float(_extract_metric(metrics, 'training', ['loss'])),
+          'train_acc': _round_float(_extract_metric(metrics, 'training', ['accuracy', 'binary_accuracy'])),
+          'val_loss': _round_float(_extract_metric(metrics, 'validation', ['loss'])),
+          'val_acc': _round_float(_extract_metric(metrics, 'validation', ['accuracy', 'binary_accuracy'])),
+          'reward': _round_float(reward)
+        }
+        aggration_round_metrics.append(aggration_round_metric)
 
         
         # Enhanced wait condition: check registered_devices count if enabled
@@ -240,7 +286,7 @@ def EdgeBlockchainBasedTraining(training):
     logging.info("Epoch training metrics: %s", str(train_metrics))
     logging.info("Epoch validation metrics: %s", str(val_metrics))
 
-    training.sendFinalMetrics(False, train_metrics, val_metrics, [], elapsed_time, None)
+    training.sendFinalMetrics(False, train_metrics, val_metrics, [], elapsed_time, None, aggration_round_metrics)
     logging.info("Sending final model and metrics to Kafka-ML Cloud")
     """Sends the final metrics to the backend"""
 

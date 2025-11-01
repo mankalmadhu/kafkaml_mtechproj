@@ -221,6 +221,7 @@ class BlockchainSingleFederatedTraining(MainTraining):
         test_metrics,
         dtime,
         cf_matrix,
+        aggration_round_metric=None,
     ):
         """Sends the metrics to the control topic"""
 
@@ -233,6 +234,7 @@ class BlockchainSingleFederatedTraining(MainTraining):
             test_metrics,
             dtime,
             cf_matrix,
+            aggration_round_metric=aggration_round_metric,
         )
 
     # Blockchain functions
@@ -390,6 +392,8 @@ class BlockchainSingleFederatedTraining(MainTraining):
             reward,
             tx_hash.hex(),
         )
+
+        return reward
 
     def reward_participants(self):
         """Rewards all participants"""      

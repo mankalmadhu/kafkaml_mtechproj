@@ -14,6 +14,7 @@ __pycache__/
 # Automation Output
 automation_*.log
 automation_results.json
+results/
 
 # IDE
 .vscode/

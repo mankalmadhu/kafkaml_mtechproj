@@ -4,8 +4,8 @@
 # Dataset configuration
 dataset:
   type: occupancy  # Dataset type
-  train_samples: 5000  # Use all available training samples
-  test_samples: 1000   # Use all available test samples
+  train_samples: 1000  # Use all available training samples
+  test_samples: 500   # Use all available test samples
   # data_path: /custom/path  # Optional: Override default (datasets/ directory)
 
 # Backend API configuration
@@ -64,7 +64,7 @@ configuration:
 # Deployment configuration
 deployment:
   batch: 32
-  epochs: 5  # Epochs per aggregation round
+  epochs: 2  # Epochs per aggregation round
   optimizer: adam
   learning_rate: 0.001
   loss: binary_crossentropy
@@ -72,8 +72,8 @@ deployment:
   
   # Federated learning settings
   federated: true
-  blockchain: false  # Enable blockchain logging
-  agg_rounds: 5    # Number of aggregation rounds
+  blockchain: true  # Enable blockchain logging
+  agg_rounds: 2    # Number of aggregation rounds
   min_data: 100    # Minimum data samples required
   agg_strategy: FedAvg  # Aggregation strategy
   

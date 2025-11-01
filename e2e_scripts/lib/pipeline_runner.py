@@ -22,6 +22,13 @@ from .kafka_admin import KafkaAdmin
 
 logger = logging.getLogger(__name__)
 
+# Hard-coded mapping between blockchain wallet addresses and device identifiers
+ACCOUNT_DEVICE_MAP = {
+    "0x70997970C51812dc3A010C7d01b50e0d17dc79C8": "device1",
+    "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC": "device2",
+    "0x90F79bf6EB2c4f870365E785982E1f101E93b906": "device3"
+}
+
 
 class PipelineRunner:
     """Orchestrates the complete E2E pipeline"""
@@ -39,6 +46,8 @@ class PipelineRunner:
         self.client = KafkaMLClient(config['backend']['url'])
         self.kafka_admin = KafkaAdmin(config['kafka']['bootstrap_servers'])
         self.kafka_bootstrap = config['kafka']['bootstrap_servers']
+        self.account_device_map = ACCOUNT_DEVICE_MAP
+        self.device_ids = [d.get('device_id') for d in self.config.get('data_injection', {}).get('devices', [])]
         
         self.results = {
             'model_id': None,
@@ -48,7 +57,10 @@ class PipelineRunner:
             'inference_id': None,
             'federated_string_id': None,
             'start_time': datetime.now().isoformat(),
-            'end_time': None
+            'end_time': None,
+            'scenario': self.config.get('model', {}).get('name'),
+            'registered_devices': len(self.device_ids),
+            'device_accounts': ACCOUNT_DEVICE_MAP
         }
     
     def _is_multi_device_config(self) -> bool:
@@ -73,6 +85,51 @@ class PipelineRunner:
         else:
             logger.info("Detected single-device configuration")
             return self._inject_training_data_single_device(deployment_id, federated_string_id)
+
+    def _map_account_to_device(self, account: Optional[str]) -> str:
+        if not account:
+            return 'unknown'
+        return ACCOUNT_DEVICE_MAP.get(account, account)
+
+    def _record_round_metrics(self, training_result: Dict[str, Any]):
+        raw_metrics = training_result.get('aggration_round_metric') 
+        rounds_map: Dict[int, List[Dict[str, Any]]] = {}
+        if isinstance(raw_metrics, list):
+            for entry in raw_metrics:
+                round_idx = entry.get('round')
+                account = entry.get('account') 
+                device_metrics = {
+                    'device_id': self._map_account_to_device(account),
+                    'source_account': account,
+                    'topic': entry.get('topic'),
+                    'num_samples': entry.get('num_samples'),
+                    'train_accuracy': entry.get('train_acc') or entry.get('train_accuracy'),
+                    'train_loss': entry.get('train_loss'),
+                    'val_accuracy': entry.get('val_acc') or entry.get('val_accuracy'),
+                    'val_loss': entry.get('val_loss'),
+                    'reward_tokens': entry.get('reward')
+                }
+                rounds_map.setdefault(round_idx, []).append(device_metrics)
+
+        logger.info(f"Rounds map: {rounds_map}")
+        #sort the rounds map by key
+        rounds_map = dict(sorted(rounds_map.items()))
+
+        self.results['rounds'] = rounds_map
+
+    def _record_inference_summary(self, predictions: List[Dict[str, Any]]):
+        if not predictions:
+            self.results['inference_summary'] = {}
+            return
+        total = len(predictions)
+        correct = sum(1 for p in predictions if p.get('correct'))
+        accuracy = correct / total if total else 0.0
+        self.results['inference_summary'] = {
+            'num_samples': total,
+            'correct_predictions': correct,
+            'accuracy': accuracy,
+            'predictions': predictions
+        }
     
     def _inject_training_data_single_device(self, deployment_id: int, federated_string_id: Optional[str] = None) -> Dict[str, int]:
         """
@@ -238,9 +295,9 @@ class PipelineRunner:
                 logger.info(f"  Loading data from file: {data_file}")
                 # fetch data for faulty device if device is coinfigured as faulty
                 if device_cfg.get('faulty_device', False):
-                    x_data, y_data = self.dataset.load_faulty_train_dataset(3000, filename=data_file)
+                    x_data, y_data = self.dataset.load_faulty_train_dataset(-1, filename=data_file)
                 else:
-                    x_data, y_data = self.dataset.load_training_data(3000, filename=data_file)
+                    x_data, y_data = self.dataset.load_training_data(-1, filename=data_file)
                 logger.info(f"  Loaded {len(x_data)} samples from {data_file}")
             else:
                 # Fallback to old method if no data_file specified
@@ -552,9 +609,18 @@ class PipelineRunner:
         
         return predictions
     
-    def save_results(self, output_file: str = "automation_results.json"):
+    def save_results(self, output_file: Optional[str] = None):
         """Save automation results to file"""
         self.results['end_time'] = datetime.now().isoformat()
+        
+        # Generate timestamp-based filename in results folder
+        if output_file is None:
+            results_dir = os.path.join(os.path.dirname(script_dir), 'results')
+            os.makedirs(results_dir, exist_ok=True)
+            
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+            scenario = self.config.get('model', {}).get('name', 'experiment')
+            output_file = os.path.join(results_dir, f"{scenario}_{timestamp}.json")
         
         with open(output_file, 'w') as f:
             json.dump(self.results, f, indent=2)
@@ -668,6 +734,7 @@ class PipelineRunner:
                 logger.info("Skipping data injection")
             
             # Step 5: Wait for training
+            training_result = {}
             if 'training' not in skip_steps:
                 training_result = self.wait_for_training_completion(deployment_id, result_id)
                 wait_for_user()
@@ -693,6 +760,7 @@ class PipelineRunner:
                 logger.info(f"Skipping inference creation, using existing ID: {inference_id}")
             
             # Step 7: Run inference
+            predictions = []
             if 'inference' not in skip_steps:
                 predictions = self.run_inference(
                     num_predictions=self.config['inference'].get('num_predictions', 10)
@@ -701,6 +769,9 @@ class PipelineRunner:
             else:
                 logger.info("Skipping inference execution")
             
+            if training_result:
+                self._record_round_metrics(training_result)
+            self._record_inference_summary(predictions)
             # Save and summarize
             self.save_results()
             self.print_summary()

@@ -89,6 +89,7 @@ class TrainingResult(models.Model):
     test_metrics = models.JSONField(blank=True, null=True)
     confusion_matrix = models.JSONField(blank=True, null=True, default=None)
     training_time = models.DecimalField(max_digits=14, decimal_places=4, blank=True, null=True)
+    aggration_round_metric = models.JSONField(blank=True, null=True)
     trained_model = models.FileField(upload_to=settings.TRAINED_MODELS_DIR, blank=True)
     confusion_mat_img = models.FileField(upload_to=settings.TRAINED_MODELS_DIR, blank=True, null=True)
 

@@ -699,7 +699,7 @@ class MainTraining(object):
                 logging.error("Error sending the metrics to the backend [%s].", str(e))
                 time.sleep(SLEEP_BETWEEN_REQUESTS)
 
-    def sendSingleMetrics(self, cf_generated, epoch_training_metrics, epoch_validation_metrics, test_metrics, dtime, cf_matrix):
+    def sendSingleMetrics(self, cf_generated, epoch_training_metrics, epoch_validation_metrics, test_metrics, dtime, cf_matrix, aggration_round_metric=None):
       """Sends single metrics to backend"""
 
       retry = 0
@@ -729,6 +729,9 @@ class MainTraining(object):
                   'confusion_matrix': cf_matrix.tolist() if cf_generated else None,
                   'indefinite': indefinite
           }
+
+          if aggration_round_metric is not None:
+            results['aggration_round_metric'] = aggration_round_metric
 
           data = {'data' : json.dumps(results)}
           logging.info("Sending result data to backend")
